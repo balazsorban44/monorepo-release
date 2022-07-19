@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"target": "ES2020",
+		"module": "Node16",
+		"moduleResolution": "Node16",
+		"rootDir": "./src",
+		"resolveJsonModule": true,
+		"outDir": "./dist",
+		"isolatedModules": true,
+		"forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"skipDefaultLibCheck": true,
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"noImplicitAny": false,
+		"declaration": true
+	}
+}
