@@ -35,7 +35,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
 	console.log("Identifying latest tag...")
 	const latestTag = execSync("git describe --tags --abbrev=0", {
-		stdio: "ignore",
+		stdio: "pipe",
 	})
 		.toString()
 		.trim()
