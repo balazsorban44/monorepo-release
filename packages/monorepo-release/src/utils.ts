@@ -31,7 +31,7 @@ export const pkgJson = { read, update }
 export function debug(...args: any[]): void {
 	if (!defaultConfig.verbose) return
 	const [first, ...rest] = args
-	console.log(`\n[debug] ${first}\n`, ...rest, "\n")
+	console.log(`\n[debug] ${first}\n${rest.join("\n")}\n`)
 }
 
 export function execSync(...args: Parameters<typeof nodeExecSync>) {
