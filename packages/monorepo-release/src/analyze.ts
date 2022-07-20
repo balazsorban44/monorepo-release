@@ -23,7 +23,6 @@ async function getPackages(rootDir: string, workspaceDirs: string[]) {
 			}
 		}
 	}
-	console.log(packages)
 
 	return packages
 }
