@@ -1,4 +1,4 @@
-# @balazsorban44/monorepo-release
+# @balazsorban/monorepo-release
 
 TODO
 
