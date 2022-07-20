@@ -162,8 +162,6 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 			? "minor" // x.1.x
 			: "patch" // x.x.1
 
-		console.log(packages)
-
 		const packageJson = await pkgJson.read(packages[pkgName])
 		const oldVersion = packageJson.version!
 		const newSemVer = semver.parse(semver.inc(oldVersion, releaseType))!
