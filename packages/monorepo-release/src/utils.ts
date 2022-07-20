@@ -5,7 +5,7 @@ import path from "node:path"
 import { execSync as nodeExecSync } from "node:child_process"
 import { defaultConfig } from "./config.js"
 
-async function read(directory: string): Promise<PackageJson> {
+async function read(directory: string): Promise<Required<PackageJson>> {
 	const content = await fs.readFile(
 		path.join(process.cwd(), directory, "package.json"),
 		"utf8"
