@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "build": "cd packages/monorepo-release && pnpm build",
+    "test": "cd packages/monorepo-release && pnpm test",
     "release": "node ./packages/monorepo-release/dist/index.js"
   }
 }
