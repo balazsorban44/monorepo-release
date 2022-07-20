@@ -11,6 +11,7 @@
 	"type": "module",
 	"scripts": {
 		"test": "prettier -c src",
+		"dev": "tsc --watch",
 		"build": "tsc",
 		"prettier:fix": "prettier --write 'src'",
 		"prepublishOnly": "pnpm build",
