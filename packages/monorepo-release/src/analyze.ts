@@ -8,21 +8,22 @@ import gitLog from "git-log-parser"
 import streamToArray from "stream-to-array"
 import fs from "node:fs"
 import path from "node:path"
-import { type PackageJson } from "type-fest"
 
-function getPackages(rootDir: string, packageDirectories: string[]) {
-	const packages: string[] = []
+async function getPackages(rootDir: string, workspaceDirs: string[]) {
+	const packages: Record<string, string> = {}
 
-	for (const dir of packageDirectories) {
-		const packagesPath = path.join(rootDir, dir)
-		for (const d of fs.readdirSync(packagesPath)) {
-			const packageJSONPath = path.join(packagesPath, d, "package.json")
-			const packageJSON = JSON.parse(
-				fs.readFileSync(packageJSONPath, "utf8")
-			) as Required<PackageJson>
-			if (!packageJSON.private) packages.push(packageJSON.name)
+	for await (const workspaceDir of workspaceDirs) {
+		const packagesPath = path.join(rootDir, workspaceDir)
+		const packageDirs = fs.readdirSync(packagesPath)
+		for await (const packageDir of packageDirs) {
+			const packagePath = path.join(workspaceDir, packageDir)
+			const packageJSON = await pkgJson.read(packagePath)
+			if (!packageJSON.private) {
+				packages[packageJSON.name] = packagePath
+			}
 		}
 	}
+	console.log(packages)
 
 	return packages
 }
@@ -31,7 +32,8 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	const { BREAKING_COMMIT_MSG, RELEASE_COMMIT_MSG, RELEASE_COMMIT_TYPES } =
 		config
 
-	const packages = getPackages(process.cwd(), config.packageDirectories)
+	const packages = await getPackages(process.cwd(), config.packageDirectories)
+	const packageList = Object.values(packages)
 
 	console.log("Identifying latest tag...")
 	const latestTag = execSync("git describe --tags --abbrev=0", {
@@ -93,7 +95,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	}
 	const packageCommits = commitsSinceLatestTag.filter(({ commit }) => {
 		const changedFiles = getChangedFiles(commit.short)
-		return packages.some((packageFolder) =>
+		return packageList.some((packageFolder) =>
 			changedFiles.some((changedFile) => changedFile.startsWith(packageFolder))
 		)
 	})
@@ -159,6 +161,8 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 			: commits.features.length
 			? "minor" // x.1.x
 			: "patch" // x.x.1
+
+		console.log(packages)
 
 		const packageJson = await pkgJson.read(packages[pkgName])
 		const oldVersion = packageJson.version!
