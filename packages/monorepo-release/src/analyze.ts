@@ -47,6 +47,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
 	console.log("Identifying commits since the latest tag...")
 
+	// TODO: Allow passing in a range of commits to analyze and print the changelog
 	const range = `${latestTag}..HEAD`
 
 	// Get the commits since the latest tag

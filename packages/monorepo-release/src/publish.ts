@@ -97,7 +97,7 @@ function createChangelog(pkg: PackageToRelease) {
 ${breaking.map((c) => `  - ${c.body}`).join("\n")}`
 	}
 
-	return changelog
+	return changelog.replace(/'/g, "'\\''")
 }
 
 function sortByScope(commits: Commit[]) {
