@@ -1,6 +1,7 @@
 {
   "private": true,
   "scripts": {
+    "dev": "cd packages/monorepo-release && pnpm dev",
     "build": "cd packages/monorepo-release && pnpm build",
     "test": "cd packages/monorepo-release && pnpm test",
     "release": "node ./packages/monorepo-release/dist/index.js"
