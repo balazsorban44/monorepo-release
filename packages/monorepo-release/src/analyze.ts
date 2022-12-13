@@ -17,9 +17,13 @@ async function getPackages(rootDir: string, workspaceDirs: string[]) {
 		const packageDirs = fs.readdirSync(packagesPath)
 		for await (const packageDir of packageDirs) {
 			const packagePath = path.join(workspaceDir, packageDir)
-			const packageJSON = await pkgJson.read(packagePath)
-			if (!packageJSON.private) {
-				packages[packageJSON.name] = packagePath
+			try {
+				const packageJSON = await pkgJson.read(packagePath)
+				if (!packageJSON.private) {
+					packages[packageJSON.name] = packagePath
+				}
+			} catch (error) {
+				console.error(error)
 			}
 		}
 	}
