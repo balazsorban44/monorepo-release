@@ -3,9 +3,11 @@ import type { PackageJson } from "type-fest"
 import fs from "node:fs/promises"
 import path from "node:path"
 import { execSync as nodeExecSync } from "node:child_process"
-import { defaultConfig } from "./config.js"
+import { Config, defaultConfig } from "./config.js"
 
-async function read(directory: string): Promise<Required<PackageJson>> {
+async function read(
+	directory: string
+): Promise<Required<PackageJson & { release?: Partial<Config> }>> {
 	const content = await fs.readFile(
 		path.join(process.cwd(), directory, "package.json"),
 		"utf8"

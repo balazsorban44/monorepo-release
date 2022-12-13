@@ -1,3 +1,5 @@
+import { pkgJson } from "./utils.js"
+
 export interface Config {
 	releaseBranches: string[]
 	packageDirectories: string[]
@@ -7,6 +9,8 @@ export interface Config {
 	dryRun: boolean
 	verbose: boolean
 }
+
+const json = await pkgJson.read("./")
 
 export const defaultConfig: Config = {
 	releaseBranches: ["main"],
@@ -20,4 +24,5 @@ export const defaultConfig: Config = {
 		!!process.env.DRY_RUN ||
 		process.argv.includes("--dry-run"),
 	verbose: !!process.env.VERBOSE || process.argv.includes("--verbose"),
+	...json.release,
 }
