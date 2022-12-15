@@ -3,10 +3,35 @@ import type { Commit, PackageToRelease } from "./types.js"
 
 import { debug, pkgJson, execSync } from "./utils.js"
 
+import * as fs from "fs"
+
+function orderPackagesByDeps(packages: PackageToRelease[]) {
+	let packagesWithDeps = new Map<string, string[]>()
+
+	for (const pkg of packages) {
+		let packageJSONString = fs.readFileSync(pkg.path + "/package.json")
+		let packageJSON = JSON.parse(packageJSONString.toString())
+		if (packageJSON.dependencies) {
+			packagesWithDeps[pkg.name] = Object.entries(packageJSON.dependencies).map(
+				([dep, _]) => dep
+			)
+		} else {
+			packagesWithDeps[pkg.name] = []
+		}
+	}
+
+	packages.sort((a, b) => {
+		return packagesWithDeps[a.name].includes(b.name) ? 1 : -1
+	})
+}
+
 export async function publish(packages: PackageToRelease[], options: Config) {
 	const { dryRun, RELEASE_COMMIT_MSG } = options
 
 	execSync("pnpm build")
+
+	// make sure packages are ordered by dependency, with packages that depend on other packages coming last
+	orderPackagesByDeps(packages)
 
 	for await (const pkg of packages) {
 		if (dryRun) {
