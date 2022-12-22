@@ -3,10 +3,24 @@ import type { Commit, PackageToRelease } from "./types.js"
 
 import { debug, pkgJson, execSync } from "./utils.js"
 
+/** Make sure that packages that depend on other packages are released last. */
+async function sortByDependency(pkgs: PackageToRelease[]) {
+	const pkgsWithDeps = new Map<string, string[]>()
+
+	for await (const pkg of pkgs) {
+		const { dependencies } = await pkgJson.read(pkg.path)
+		pkgsWithDeps.set(pkg.name, Object.keys(dependencies ?? {}))
+	}
+
+	pkgs.sort((a, b) => (pkgsWithDeps.get(a.name)?.includes(b.name) ? 1 : -1))
+}
+
 export async function publish(packages: PackageToRelease[], options: Config) {
 	const { dryRun, RELEASE_COMMIT_MSG } = options
 
 	execSync("pnpm build")
+
+	await sortByDependency(packages)
 
 	for await (const pkg of packages) {
 		if (dryRun) {
