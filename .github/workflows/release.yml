@@ -37,13 +37,13 @@ jobs:
     environment: Production
     steps:
       - uses: actions/checkout@v3
-      - name: Init
+        name: Init
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
+          run: |
+            git config user.name github-actions
+            git config user.email github-actions@github.com
       - name: Install pnpm
         uses: pnpm/action-setup@v2.2.1
         with:
