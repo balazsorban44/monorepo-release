@@ -3,26 +3,16 @@ import type { Commit, PackageToRelease } from "./types.js"
 
 import { debug, pkgJson, execSync } from "./utils.js"
 
-import * as fs from "fs"
+/** Make sure that packages that depend on other packages are released last. */
+async function sortByDependency(pkgs: PackageToRelease[]) {
+	const pkgsWithDeps = new Map<string, string[]>()
 
-function orderPackagesByDeps(packages: PackageToRelease[]) {
-	let packagesWithDeps = new Map<string, string[]>()
-
-	for (const pkg of packages) {
-		let packageJSONString = fs.readFileSync(pkg.path + "/package.json")
-		let packageJSON = JSON.parse(packageJSONString.toString())
-		if (packageJSON.dependencies) {
-			packagesWithDeps[pkg.name] = Object.entries(packageJSON.dependencies).map(
-				([dep, _]) => dep
-			)
-		} else {
-			packagesWithDeps[pkg.name] = []
-		}
+	for await (const pkg of pkgs) {
+		const { dependencies } = await pkgJson.read(pkg.path)
+		pkgsWithDeps.set(pkg.name, Object.keys(dependencies ?? {}))
 	}
 
-	packages.sort((a, b) => {
-		return packagesWithDeps[a.name].includes(b.name) ? 1 : -1
-	})
+	pkgs.sort((a, b) => (pkgsWithDeps.get(a.name)?.includes(b.name) ? 1 : -1))
 }
 
 export async function publish(packages: PackageToRelease[], options: Config) {
@@ -30,8 +20,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 
 	execSync("pnpm build")
 
-	// make sure packages are ordered by dependency, with packages that depend on other packages coming last
-	orderPackagesByDeps(packages)
+	await sortByDependency(packages)
 
 	for await (const pkg of packages) {
 		if (dryRun) {
