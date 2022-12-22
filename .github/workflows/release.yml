@@ -36,10 +36,14 @@ jobs:
     if: ${{ github.event_name == 'push' }}
     environment: Production
     steps:
+      - uses: actions/checkout@v3
       - name: Init
-        uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
       - name: Install pnpm
         uses: pnpm/action-setup@v2.2.1
         with:
@@ -52,10 +56,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Publish to npm and GitHub
-        run: |
-          git config --global user.email "balazsorban44@users.noreply.github.com"
-          git config --global user.name "Balázs Orbán"
-          pnpm build
-          pnpm release
+        run: pnpm release --no-verify
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
