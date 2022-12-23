@@ -6,7 +6,7 @@ export interface Config {
 	BREAKING_COMMIT_MSG: string
 	RELEASE_COMMIT_MSG: string
 	RELEASE_COMMIT_TYPES: string[]
-	NO_VERIFY: boolean
+	noVerify: boolean
 	dryRun: boolean
 	verbose: boolean
 }
@@ -20,7 +20,7 @@ export const defaultConfig: Config = {
 	BREAKING_COMMIT_MSG: "BREAKING CHANGE:",
 	RELEASE_COMMIT_MSG: "chore(release): bump package version(s) [skip ci]",
 	RELEASE_COMMIT_TYPES: ["feat", "fix"],
-	NO_VERIFY: !!process.env.NO_VERIFY || process.argv.includes("--no-verify"),
+	noVerify: !!process.env.NO_VERIFY || process.argv.includes("--no-verify"),
 	dryRun:
 		!process.env.CI ||
 		!!process.env.DRY_RUN ||

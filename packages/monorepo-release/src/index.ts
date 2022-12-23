@@ -18,8 +18,10 @@ if (shouldSkip({ releaseBranches: config.releaseBranches })) {
 
 if (config.dryRun) {
 	console.log("\nDry run, skip validation...\n")
+} else if (config.noVerify) {
+	console.log("\n--no-verify or NO_VERIFY set, skipping token validation...\n")
 } else {
-	!config.NO_VERIFY && (await verify())
+	await verify()
 }
 
 const packages = await analyze(defaultConfig)
