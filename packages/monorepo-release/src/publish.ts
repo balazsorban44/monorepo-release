@@ -56,7 +56,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	} else {
 		console.log("Commiting.")
 		execSync(
-			`git config --local user.name "GitHub Actions" git config --local user.email "actions@github.com"`
+			`git config --local user.name "GitHub Actions" && git config --local user.email "actions@github.com"`
 		)
 		execSync(`git add -A && git commit -m "${RELEASE_COMMIT_MSG}"`)
 		console.log("Commited.")
