@@ -1,6 +1,6 @@
 {
   "name": "@balazsorban/monorepo-release",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Similar to `semantic-release`, but for monorepos.",
   "bin": {
     "release": "dist/index.js"
