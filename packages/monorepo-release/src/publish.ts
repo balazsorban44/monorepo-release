@@ -18,6 +18,8 @@ async function sortByDependency(pkgs: PackageToRelease[]) {
 export async function publish(packages: PackageToRelease[], options: Config) {
 	const { dryRun, RELEASE_COMMIT_MSG } = options
 
+	execSync("pnpm build")
+	
 	await sortByDependency(packages)
 
 	for await (const pkg of packages) {
