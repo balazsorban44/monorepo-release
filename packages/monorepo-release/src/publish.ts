@@ -51,12 +51,16 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		execSync(npmPublish, { cwd: pkg.path })
 	}
 
-	// if (dryRun) {
-	// 	console.log("Dry run, skip release commit...")
-	// } else {
-	execSync(`git add -A && git commit -m "${RELEASE_COMMIT_MSG}"`)
-	// console.log("Commited.")
-	// }
+	if (dryRun) {
+		console.log("Dry run, skip release commit...")
+	} else {
+		console.log("Commiting.")
+		execSync(
+			`git config --local user.name "GitHub Actions" git config --local user.email "actions@github.com"`
+		)
+		execSync(`git add -A && git commit -m "${RELEASE_COMMIT_MSG}"`)
+		console.log("Commited.")
+	}
 
 	for (const pkg of packages) {
 		const { name, oldVersion, newVersion } = pkg

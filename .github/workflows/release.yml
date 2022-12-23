@@ -48,14 +48,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Publish to npm and GitHub
-        run: |
-          git config --local user.name "GitHub Actions"
-          git config --local user.email "actions@github.com"
-          pnpm build
-          pnpm release
+        run: pnpm build && pnpm release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           # Use GH_PAT when this is fixed:
           # https://github.com/github/roadmap/issues/622
           GITHUB_TOKEN: ${{ secrets.GH_PAT_CLASSIC }}
-          DRY_RUN: 1
