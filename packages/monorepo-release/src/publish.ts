@@ -72,7 +72,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 
 	for (const pkg of packages) {
 		const { name, oldVersion, newVersion } = pkg
-		const gitTag = `${name}@v${newVersion}`
+		const gitTag = `${name}@${newVersion}`
 
 		console.log(
 			`\n\n-------------------------------\n${name} ${oldVersion} -> ${newVersion}`
