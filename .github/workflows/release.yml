@@ -38,6 +38,7 @@ jobs:
         name: Init
         with:
           fetch-depth: 0
+          token: ${{ secrets.GH_PAT_CLASSIC }}
       - name: Install pnpm
         uses: pnpm/action-setup@v2.2.4
       - name: Setup Node
@@ -51,6 +52,3 @@ jobs:
         run: pnpm build && pnpm release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          # Use GH_PAT when this is fixed:
-          # https://github.com/github/roadmap/issues/622
-          GITHUB_TOKEN: ${{ secrets.GH_PAT_CLASSIC }}
