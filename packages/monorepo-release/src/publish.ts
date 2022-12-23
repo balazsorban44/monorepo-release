@@ -83,9 +83,8 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		}
 	}
 
-	if (!dryRun) {
-		execSync(`git push`)
-	}
+	if (dryRun) execSync(`git push --dry-run`)
+	else execSync(`git push`)
 }
 
 function createChangelog(pkg: PackageToRelease) {
