@@ -38,9 +38,10 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		let npmPublish = `pnpm publish --access public --registry=https://registry.npmjs.org --no-git-checks`
 		// We use different tokens for `next-auth` and `@next-auth/*` packages
 
+		// HACK: This is a workaround to support the NextAuth.js monorepo, remove
 		if (pkg.name === "next-auth") {
 			process.env.NPM_TOKEN = process.env.NPM_TOKEN_PKG
-		} else {
+		} else if (process.env.NPM_TOKEN_ORG) {
 			process.env.NPM_TOKEN = process.env.NPM_TOKEN_ORG
 		}
 
@@ -62,6 +63,9 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	if (dryRun) {
 		console.log("Dry run, skip release commit...")
 	} else {
+		execSync(
+			"git config user.name github-actions && git config user.email github-actions@github.com"
+		)
 		execSync(`git add -A && git commit -m "${RELEASE_COMMIT_MSG}"`)
 		console.log("Commited.")
 	}
