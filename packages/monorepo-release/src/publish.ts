@@ -18,8 +18,6 @@ async function sortByDependency(pkgs: PackageToRelease[]) {
 export async function publish(packages: PackageToRelease[], options: Config) {
 	const { dryRun, RELEASE_COMMIT_MSG } = options
 
-	execSync("pnpm build")
-
 	await sortByDependency(packages)
 
 	for await (const pkg of packages) {
@@ -37,13 +35,6 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 
 		let npmPublish = `pnpm publish --access public --registry=https://registry.npmjs.org --no-git-checks`
 		// We use different tokens for `next-auth` and `@next-auth/*` packages
-
-		// HACK: This is a workaround to support the NextAuth.js monorepo, remove
-		if (pkg.name === "next-auth") {
-			process.env.NPM_TOKEN = process.env.NPM_TOKEN_PKG
-		} else if (process.env.NPM_TOKEN_ORG) {
-			process.env.NPM_TOKEN = process.env.NPM_TOKEN_ORG
-		}
 
 		if (dryRun) {
 			console.log(
