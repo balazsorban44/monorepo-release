@@ -83,9 +83,10 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 			execSync(`gh release create ${gitTag} --notes '${changelog}'`)
 		}
 	}
-
+        console.log("Pushing commits")
 	if (dryRun) execSync(`git push --dry-run`)
 	else execSync(`git push`)
+	
 }
 
 function createChangelog(pkg: PackageToRelease) {
