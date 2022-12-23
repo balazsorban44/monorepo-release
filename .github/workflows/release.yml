@@ -48,7 +48,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Publish to npm and GitHub
-        run: pnpm build && pnpm release
+        run: |
+          git config --local user.name "GitHub Actions"
+          git config --local user.email "actions@github.com"
+          pnpm build
+          pnpm release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           # Use GH_PAT when this is fixed:
