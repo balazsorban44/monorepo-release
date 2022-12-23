@@ -54,4 +54,4 @@ jobs:
           # Use GH_PAT when this is fixed:
           # https://github.com/github/roadmap/issues/622
           GITHUB_TOKEN: ${{ secrets.GH_PAT_CLASSIC }}
-          NO_VERIFY: 1
+          DRY_RUN: 1
