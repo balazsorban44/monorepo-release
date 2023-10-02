@@ -1,7 +1,7 @@
 import type { Commit, GrouppedCommits, PackageToRelease } from "./types.js"
 import type { Config } from "./config.js"
-
-import { debug, pkgJson, execSync } from "./utils.js"
+import { bold } from "yoctocolors"
+import { log, pkgJson, execSync } from "./utils.js"
 import semver from "semver"
 import * as commitlint from "@commitlint/parse"
 import gitLog from "git-log-parser"
@@ -17,13 +17,9 @@ async function getPackages(rootDir: string, workspaceDirs: string[]) {
 		const packageDirs = fs.readdirSync(packagesPath)
 		for await (const packageDir of packageDirs) {
 			const packagePath = path.join(workspaceDir, packageDir)
-			try {
-				const packageJSON = await pkgJson.read(packagePath)
-				if (!packageJSON.private) {
-					packages[packageJSON.name] = packagePath
-				}
-			} catch (error) {
-				console.error(error)
+			const packageJSON = await pkgJson.read(packagePath).catch(log.error)
+			if (packageJSON && !packageJSON.private) {
+				packages[packageJSON.name] = packagePath
 			}
 		}
 	}
@@ -38,18 +34,18 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	const packages = await getPackages(process.cwd(), config.packageDirectories)
 	const packageList = Object.values(packages)
 
-	console.log("Identifying latest tag...")
+	log.info("Identifying latest tag...")
 	const latestTag = execSync("git describe --tags --abbrev=0", {
 		stdio: "pipe",
 	})
 		.toString()
 		.trim()
 
-	console.log(`Latest tag identified: ${latestTag}`)
+	log.info(`Latest tag identified: \`${bold(latestTag)}\``)
 
-	console.log()
+	log.info()
 
-	console.log("Identifying commits since the latest tag...")
+	log.info("Identifying commits since the latest tag...")
 
 	// TODO: Allow passing in a range of commits to analyze and print the changelog
 	const range = `${latestTag}..HEAD`
@@ -73,8 +69,11 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		},
 	)
 
-	console.log(commitsSinceLatestTag.length, `commits found since ${latestTag}`)
-	debug(
+	log.info(
+		commitsSinceLatestTag.length,
+		`commits found since \`${bold(latestTag)}\``,
+	)
+	log.debug(
 		"Analyzing the following commits:",
 		commitsSinceLatestTag.map((c) => `  ${c.subject}`).join("\n"),
 	)
@@ -82,12 +81,12 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	const lastCommit = commitsSinceLatestTag[0]
 
 	if (lastCommit?.parsed.raw === RELEASE_COMMIT_MSG) {
-		debug("Already released...")
+		log.debug("Already released...")
 		return []
 	}
 
-	console.log()
-	console.log("Identifying commits that touched package code...")
+	log.info()
+	log.info("Identifying commits that touched package code...")
 	function getChangedFiles(commitSha: string) {
 		return execSync(
 			`git diff-tree --no-commit-id --name-only -r ${commitSha}`,
@@ -104,11 +103,11 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		)
 	})
 
-	console.log(packageCommits.length, "commits touched package code")
+	log.info(packageCommits.length, "commits touched package code")
 
-	console.log()
+	log.info()
 
-	console.log("Identifying packages that need a new release...")
+	log.info("Identifying packages that need a new release...")
 
 	const packagesNeedRelease: string[] = []
 	const grouppedPackages = packageCommits.reduce(
@@ -150,17 +149,16 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	)
 
 	if (packagesNeedRelease.length) {
-		console.log(
+		log.info(
 			packagesNeedRelease.length,
 			`new release(s) needed: ${packagesNeedRelease.join(", ")}`,
 		)
 	} else {
-		console.log("No packages needed a new release, BYE!")
-
-		return []
+		log.info("No packages needed a new release, exiting!")
+		process.exit(0)
 	}
 
-	console.log()
+	log.info()
 
 	const packagesToRelease: PackageToRelease[] = []
 	for await (const pkgName of packagesNeedRelease) {

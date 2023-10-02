@@ -1,7 +1,7 @@
 import { type Config } from "./config.js"
 import type { Commit, PackageToRelease } from "./types.js"
 
-import { debug, pkgJson, execSync } from "./utils.js"
+import { log, pkgJson, execSync } from "./utils.js"
 
 /** Make sure that packages that depend on other packages are released last. */
 async function sortByDependency(pkgs: PackageToRelease[]) {
@@ -24,24 +24,22 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 
 	for await (const pkg of packages) {
 		if (dryRun) {
-			console.log(
+			log.info(
 				`Dry run, \`npm publish\` would have released package \`${pkg.name}\` with version "${pkg.newVersion}".`,
 			)
 		} else {
-			console.log(
+			log.info(
 				`Writing version "${pkg.newVersion}" to package.json for package \`${pkg.name}\``,
 			)
 			await pkgJson.update(pkg.path, { version: pkg.newVersion })
-			console.log("package.json file has been written, publishing...")
+			log.info("package.json file has been written, publishing...")
 		}
 
 		let npmPublish = `pnpm publish --access public --registry=https://registry.npmjs.org --no-git-checks`
 		// We use different tokens for `next-auth` and `@next-auth/*` packages
 
 		if (dryRun) {
-			console.log(
-				`Dry run, skip \`npm publish\` for package \`${pkg.name}\`...\n`,
-			)
+			log.info(`Dry run, skip \`npm publish\` for package \`${pkg.name}\`...\n`)
 			npmPublish += " --dry-run --silent"
 		} else {
 			execSync(
@@ -54,38 +52,38 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	}
 
 	if (dryRun) {
-		console.log("Dry run, skip release commit...")
+		log.info("Dry run, skip release commit...")
 	} else {
-		console.log("Commiting.")
+		log.info("Commiting.")
 		execSync(
 			`git config --local user.name "GitHub Actions" && git config --local user.email "actions@github.com"`,
 		)
 		execSync(`git add -A && git commit -m "${RELEASE_COMMIT_MSG}"`)
-		console.log("Commited.")
+		log.info("Commited.")
 	}
 
 	for (const pkg of packages) {
 		const { name, oldVersion, newVersion } = pkg
 		const gitTag = `${name}@${newVersion}`
 
-		console.log(
+		log.info(
 			`\n\n-------------------------------\n${name} ${oldVersion} -> ${newVersion}`,
 		)
 
 		const changelog = createChangelog(pkg)
-		debug("Changelog generated", changelog)
+		log.debug("Changelog generated", changelog)
 
 		if (dryRun) {
-			console.log(`Dry run, skip git tag/release notes for package \`${name}\``)
+			log.info(`Dry run, skip git tag/release notes for package \`${name}\``)
 		} else {
-			console.log(`Creating git tag...`)
+			log.info(`Creating git tag...`)
 			execSync(`git tag ${gitTag}`)
 			execSync("git push --tags")
-			console.log(`Creating GitHub release notes...`)
+			log.info(`Creating GitHub release notes...`)
 			execSync(`gh release create ${gitTag} --notes '${changelog}'`)
 		}
 	}
-	console.log("Pushing commits")
+	log.info("Pushing commits")
 	if (dryRun) execSync(`git push --dry-run`)
 	else execSync(`git push`)
 }
@@ -94,7 +92,7 @@ function createChangelog(pkg: PackageToRelease) {
 	const {
 		commits: { features, breaking, bugfixes, other },
 	} = pkg
-	console.log(`Creating changelog for package \`${pkg.name}\`...`)
+	log.info(`Creating changelog for package \`${pkg.name}\`...`)
 
 	let changelog = ``
 	changelog += listGroup("Features", features)

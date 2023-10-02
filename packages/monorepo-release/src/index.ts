@@ -3,7 +3,7 @@ import { shouldSkip } from "./skip.js"
 import { verify as verify } from "./verify.js"
 import { analyze } from "./analyze.js"
 import { publish } from "./publish.js"
-import { debug } from "./utils.js"
+import { log } from "./utils.js"
 
 const userConfig = {} // TODO: Allow user config
 
@@ -26,9 +26,7 @@ if (config.dryRun) {
 
 const packages = await analyze(defaultConfig)
 
-if (!packages.length) process.exit(0)
-
-debug(
+log.debug(
 	"Packages to release:",
 	packages
 		.map((p) =>

@@ -1,5 +1,5 @@
 import type { PackageJson } from "type-fest"
-
+import { gray, blue, red } from "yoctocolors"
 import fs from "node:fs/promises"
 import path from "node:path"
 import { execSync as nodeExecSync } from "node:child_process"
@@ -30,10 +30,18 @@ async function update(
 
 export const pkgJson = { read, update }
 
-export function debug(...args: any[]): void {
-	if (!defaultConfig.verbose) return
-	const [first, ...rest] = args
-	console.log(`\n[debug] ${first}\n${rest.join("\n")}\n`)
+export const log = {
+	debug(...args) {
+		if (!defaultConfig.verbose) return
+		const [first, ...rest] = args
+		console.log(`\n${gray("[debug]")} ${first}\n${rest.join("\n")}\n`)
+	},
+	info(...args) {
+		console.log(blue("[info]"), " ", ...args)
+	},
+	error(error: Error) {
+		console.error(red("[error]"), " ", error, "\n")
+	},
 }
 
 export function execSync(...args: Parameters<typeof nodeExecSync>) {
