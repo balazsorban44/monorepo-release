@@ -14,7 +14,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		config
 
 	const packages = await getPackages(process.cwd())
-	const packageList = packages.packages
+	const packageList = packages.packages.filter((p) => !p.packageJson.private)
 	const dependentsGraph = await getDependentsGraph({
 		...packages,
 		// @ts-expect-error See: https://github.com/Thinkmill/manypkg/blob/main/packages/get-packages/CHANGELOG.md#200
