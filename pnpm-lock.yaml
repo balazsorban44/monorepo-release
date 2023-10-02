@@ -48,12 +48,6 @@ importers:
         specifier: 5.2.2
         version: 5.2.2
 
-  packages/test:
-    dependencies:
-      '@balazsorban/monorepo-release':
-        specifier: workspace:*
-        version: link:../monorepo-release
-
 packages:
 
   /@babel/code-frame@7.22.13:
