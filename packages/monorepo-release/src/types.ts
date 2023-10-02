@@ -52,4 +52,5 @@ export interface GrouppedCommits {
 	bugfixes: Commit[]
 	other: Commit[]
 	breaking: Commit[]
+	dependents: string[]
 }
