@@ -1,7 +1,7 @@
 import type { Commit, GrouppedCommits, PackageToRelease } from "./types.js"
 import type { Config } from "./config.js"
 import { bold } from "yoctocolors"
-import { log, execSync } from "./utils.js"
+import { log, execSync, pluralize } from "./utils.js"
 import semver from "semver"
 import * as commitlint from "@commitlint/parse"
 import gitLog from "git-log-parser"
@@ -22,7 +22,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		root: packages.rootPackage,
 	})
 
-	log.info("Identifying latest tag...")
+	log.debug("Identifying latest tag...")
 	const latestTag = execSync("git describe --tags --abbrev=0", {
 		stdio: "pipe",
 	})
@@ -31,9 +31,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
 	log.info(`Latest tag identified: \`${bold(latestTag)}\``)
 
-	log.info()
-
-	log.info("Identifying commits since the latest tag...")
+	log.debug("Identifying commits since the latest tag...")
 
 	// TODO: Allow passing in a range of commits to analyze and print the changelog
 	const range = `${latestTag}..HEAD`
@@ -59,7 +57,8 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
 	log.info(
 		commitsSinceLatestTag.length,
-		`commits found since \`${bold(latestTag)}\``,
+		pluralize("commit", commitsSinceLatestTag.length),
+		` found since \`${bold(latestTag)}\``,
 	)
 	log.debug(
 		"Analyzing the following commits:",
@@ -73,8 +72,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		return []
 	}
 
-	log.info()
-	log.info("Identifying commits that touched package code...")
+	log.debug("Identifying commits that touched package code...")
 	function getChangedFiles(commitSha: string) {
 		return execSync(
 			`git diff-tree --no-commit-id --name-only -r ${commitSha}`,
@@ -91,11 +89,13 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		)
 	})
 
-	log.info(packageCommits.length, "commits touched package code")
+	log.info(
+		packageCommits.length,
+		pluralize("commit", packageCommits.length),
+		` touched package code`,
+	)
 
-	log.info()
-
-	log.info("Identifying packages that need a new release...")
+	log.debug("Identifying packages that need a new release...")
 
 	const packagesNeedRelease: Set<string> = new Set()
 	const grouppedPackages = packageCommits.reduce(
@@ -112,8 +112,10 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 					const dependents = dependentsGraph.get(pkg) ?? []
 					// Add dependents to the list of packages that need a release
 					if (dependents.length) {
-						log.info(
-							`\`${bold(pkg)}\` will also bump: ${dependents.join(", ")}`,
+						log.debug(
+							`\`${bold(pkg)}\` will also bump: ${dependents
+								.map((d) => bold(d))
+								.join(", ")}`,
 						)
 					}
 
@@ -152,22 +154,22 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	if (packagesNeedRelease.size) {
 		const allPackagesToRelease = Object.entries(grouppedPackages).reduce(
 			(acc, [pkg, { dependents }]) => {
-				acc.add(pkg)
-				for (const dependent of dependents) acc.add(dependent)
+				acc.add(bold(pkg))
+				for (const dependent of dependents) acc.add(bold(dependent))
 				return acc
 			},
 			new Set<string>(),
 		)
 		log.info(
 			allPackagesToRelease.size,
-			`new release(s) needed: ${Array.from(allPackagesToRelease).join(", ")}`,
+			pluralize("package", allPackagesToRelease.size),
+			`need to be released:`,
+			Array.from(allPackagesToRelease).join(", "),
 		)
 	} else {
-		log.info("No packages needed a new release, exiting!")
+		log.info("No need to release, exiting.")
 		process.exit(0)
 	}
-
-	log.info()
 
 	const packagesToRelease: Map<string, PackageToRelease> = new Map()
 	for await (const pkgName of packagesNeedRelease) {
