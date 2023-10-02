@@ -26,9 +26,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	for await (const pkg of packages) {
 		if (dryRun) {
 			log.info(
-				`Dry run, \`${bold(
-					pkg.name + "@" + pkg.newVersion,
-				)}\` won't be released`,
+				`Dry run won't release \`${bold(pkg.name + "@" + pkg.newVersion)}\``,
 			)
 		} else {
 			log.info(
@@ -41,10 +39,9 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		}
 
 		let npmPublish = `pnpm publish --access public --registry=https://registry.npmjs.org --no-git-checks`
-		// We use different tokens for `next-auth` and `@next-auth/*` packages
-
 		if (dryRun) {
-			npmPublish += " --dry-run --silent"
+			npmPublish += " --dry-run"
+			if (!options.verbose) npmPublish += " --silent"
 		} else {
 			execSync(
 				"echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc",
