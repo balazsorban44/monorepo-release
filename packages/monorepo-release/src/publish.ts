@@ -8,7 +8,7 @@ async function sortByDependency(pkgs: PackageToRelease[]) {
 	const pkgsWithDeps = new Map<string, string[]>()
 
 	for await (const pkg of pkgs) {
-		const { dependencies } = await pkgJson.read(pkg.path)
+		const { dependencies } = await pkgJson.read(pkg.relativeDir)
 		pkgsWithDeps.set(pkg.name, Object.keys(dependencies ?? {}))
 	}
 
@@ -31,7 +31,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 			log.info(
 				`Writing version "${pkg.newVersion}" to package.json for package \`${pkg.name}\``,
 			)
-			await pkgJson.update(pkg.path, { version: pkg.newVersion })
+			await pkgJson.update(pkg.relativeDir, { version: pkg.newVersion })
 			log.info("package.json file has been written, publishing...")
 		}
 
@@ -44,11 +44,11 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		} else {
 			execSync(
 				"echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc",
-				{ cwd: pkg.path },
+				{ cwd: pkg.relativeDir },
 			)
 		}
 
-		execSync(npmPublish, { cwd: pkg.path })
+		execSync(npmPublish, { cwd: pkg.relativeDir })
 	}
 
 	if (dryRun) {

@@ -1,38 +1,18 @@
 import type { Commit, GrouppedCommits, PackageToRelease } from "./types.js"
 import type { Config } from "./config.js"
 import { bold } from "yoctocolors"
-import { log, pkgJson, execSync } from "./utils.js"
+import { log, execSync } from "./utils.js"
 import semver from "semver"
 import * as commitlint from "@commitlint/parse"
 import gitLog from "git-log-parser"
 import streamToArray from "stream-to-array"
-import fs from "node:fs"
-import path from "node:path"
-
-async function getPackages(rootDir: string, workspaceDirs: string[]) {
-	const packages: Record<string, string> = {}
-
-	for await (const workspaceDir of workspaceDirs) {
-		const packagesPath = path.join(rootDir, workspaceDir)
-		const packageDirs = fs.readdirSync(packagesPath)
-		for await (const packageDir of packageDirs) {
-			const packagePath = path.join(workspaceDir, packageDir)
-			const packageJSON = await pkgJson.read(packagePath).catch(log.error)
-			if (packageJSON && !packageJSON.private) {
-				packages[packageJSON.name] = packagePath
-			}
-		}
-	}
-
-	return packages
-}
+import { getPackages } from "@manypkg/get-packages"
 
 export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	const { BREAKING_COMMIT_MSG, RELEASE_COMMIT_MSG, RELEASE_COMMIT_TYPES } =
 		config
 
-	const packages = await getPackages(process.cwd(), config.packageDirectories)
-	const packageList = Object.values(packages)
+	const packageList = await getPackages(process.cwd())
 
 	log.info("Identifying latest tag...")
 	const latestTag = execSync("git describe --tags --abbrev=0", {
@@ -98,8 +78,8 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	}
 	const packageCommits = commitsSinceLatestTag.filter(({ commit }) => {
 		const changedFiles = getChangedFiles(commit.short)
-		return packageList.some((packageFolder) =>
-			changedFiles.some((changedFile) => changedFile.startsWith(packageFolder)),
+		return packageList.packages.some(({ relativeDir }) =>
+			changedFiles.some((changedFile) => changedFile.startsWith(relativeDir)),
 		)
 	})
 
@@ -114,10 +94,11 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		(acc, commit) => {
 			const changedFilesInCommit = getChangedFiles(commit.commit.short)
 
-			for (const [pkg, src] of Object.entries(packages)) {
+			for (const { relativeDir, packageJson } of packageList.packages) {
+				const { name: pkg } = packageJson
 				if (
 					changedFilesInCommit.some((changedFile) =>
-						changedFile.startsWith(src),
+						changedFile.startsWith(relativeDir),
 					)
 				) {
 					if (!(pkg in acc)) {
@@ -169,7 +150,9 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 			? "minor" // x.1.x
 			: "patch" // x.x.1
 
-		const packageJson = await pkgJson.read(packages[pkgName])
+		const { packageJson, relativeDir } = packageList.packages.find(
+			(pkg) => pkg.packageJson.name === pkgName,
+		)!
 		const oldVersion = packageJson.version!
 		const newSemVer = semver.parse(semver.inc(oldVersion, releaseType))!
 
@@ -178,7 +161,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 			oldVersion,
 			newVersion: `${newSemVer.major}.${newSemVer.minor}.${newSemVer.patch}`,
 			commits,
-			path: packages[pkgName],
+			relativeDir,
 		})
 	}
 

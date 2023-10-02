@@ -34,12 +34,6 @@ export interface Parsed {
 	raw: string
 }
 
-export interface Package {
-	name: string
-	srcDir: string
-	peerDependencies?: string[]
-}
-
 export interface BranchConfig {
 	prerelease: boolean
 	ghRelease: boolean
@@ -50,7 +44,7 @@ export interface PackageToRelease {
 	newVersion: string
 	oldVersion: string
 	commits: GrouppedCommits
-	path: string
+	relativeDir: string
 }
 
 export interface GrouppedCommits {

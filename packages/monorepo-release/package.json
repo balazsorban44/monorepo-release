@@ -20,6 +20,7 @@
 	},
 	"dependencies": {
 		"@commitlint/parse": "17.7.0",
+		"@manypkg/get-packages": "^2.2.0",
 		"git-log-parser": "1.2.0",
 		"semver": "7.5.4",
 		"stream-to-array": "2.3.0",
