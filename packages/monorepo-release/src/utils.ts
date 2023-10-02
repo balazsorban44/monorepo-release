@@ -34,13 +34,13 @@ export const log = {
 	debug(...args) {
 		if (!defaultConfig.verbose) return
 		const [first, ...rest] = args
-		console.log(`\n${gray("[debug]")} ${first}\n${rest.join("\n")}\n`)
+		console.log(gray("\n[debug]"), `${first}\n${rest.join("\n")}\n`)
 	},
 	info(...args) {
-		console.log(blue("[info]"), " ", ...args)
+		console.log(blue("[info]"), ...args)
 	},
 	error(error: Error) {
-		console.error(red("[error]"), " ", error, "\n")
+		console.error(red("\n[error]"), error, "\n")
 	},
 }
 

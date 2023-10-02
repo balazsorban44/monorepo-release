@@ -1,3 +1,4 @@
+import { bold } from "yoctocolors"
 import { type Config } from "./config.js"
 import type { Commit, PackageToRelease } from "./types.js"
 
@@ -25,11 +26,17 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	for await (const pkg of packages) {
 		if (dryRun) {
 			log.info(
-				`Dry run, \`npm publish\` would have released package \`${pkg.name}\` with version "${pkg.newVersion}".`,
+				`Dry run, \`${bold(
+					"npm publish",
+				)}\` would have released package \`${bold(
+					pkg.name,
+				)}\` with version \`${bold(pkg.newVersion)}\`.`,
 			)
 		} else {
 			log.info(
-				`Writing version "${pkg.newVersion}" to package.json for package \`${pkg.name}\``,
+				`Writing version "${bold(
+					pkg.newVersion,
+				)}" to package.json for package \`${bold(pkg.name)}\``,
 			)
 			await pkgJson.update(pkg.relativeDir, { version: pkg.newVersion })
 			log.info("package.json file has been written, publishing...")
@@ -71,10 +78,12 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		)
 
 		const changelog = createChangelog(pkg)
-		log.debug("Changelog generated", changelog)
+		log.debug(`Changelog generated for \`${bold(pkg.name)}\`:\n`, changelog)
 
 		if (dryRun) {
-			log.info(`Dry run, skip git tag/release notes for package \`${name}\``)
+			log.info(
+				`Dry run, skip git tag/release notes for package \`${bold(name)}\``,
+			)
 		} else {
 			log.info(`Creating git tag...`)
 			execSync(`git tag ${gitTag}`)
@@ -92,7 +101,7 @@ function createChangelog(pkg: PackageToRelease) {
 	const {
 		commits: { features, breaking, bugfixes, other },
 	} = pkg
-	log.info(`Creating changelog for package \`${pkg.name}\`...`)
+	log.info(`Generating changelog for package \`${bold(pkg.name)}\`...`)
 
 	let changelog = ``
 	changelog += listGroup("Features", features)
