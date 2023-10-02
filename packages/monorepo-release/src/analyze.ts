@@ -67,16 +67,16 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 						const parsed = await commitlint.default.default(d.subject)
 
 						return { ...d, parsed }
-					})
+					}),
 				).then((res) => resolve(res.filter(Boolean)))
 			})
-		}
+		},
 	)
 
 	console.log(commitsSinceLatestTag.length, `commits found since ${latestTag}`)
 	debug(
 		"Analyzing the following commits:",
-		commitsSinceLatestTag.map((c) => `  ${c.subject}`).join("\n")
+		commitsSinceLatestTag.map((c) => `  ${c.subject}`).join("\n"),
 	)
 
 	const lastCommit = commitsSinceLatestTag[0]
@@ -91,7 +91,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	function getChangedFiles(commitSha: string) {
 		return execSync(
 			`git diff-tree --no-commit-id --name-only -r ${commitSha}`,
-			{ stdio: "pipe" }
+			{ stdio: "pipe" },
 		)
 			.toString()
 			.trim()
@@ -100,7 +100,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	const packageCommits = commitsSinceLatestTag.filter(({ commit }) => {
 		const changedFiles = getChangedFiles(commit.short)
 		return packageList.some((packageFolder) =>
-			changedFiles.some((changedFile) => changedFile.startsWith(packageFolder))
+			changedFiles.some((changedFile) => changedFile.startsWith(packageFolder)),
 		)
 	})
 
@@ -111,43 +111,48 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	console.log("Identifying packages that need a new release...")
 
 	const packagesNeedRelease: string[] = []
-	const grouppedPackages = packageCommits.reduce((acc, commit) => {
-		const changedFilesInCommit = getChangedFiles(commit.commit.short)
+	const grouppedPackages = packageCommits.reduce(
+		(acc, commit) => {
+			const changedFilesInCommit = getChangedFiles(commit.commit.short)
 
-		for (const [pkg, src] of Object.entries(packages)) {
-			if (
-				changedFilesInCommit.some((changedFile) => changedFile.startsWith(src))
-			) {
-				if (!(pkg in acc)) {
-					acc[pkg] = { features: [], bugfixes: [], other: [], breaking: [] }
-				}
-				const { type } = commit.parsed
-				if (RELEASE_COMMIT_TYPES.includes(type)) {
-					if (!packagesNeedRelease.includes(pkg)) {
-						packagesNeedRelease.push(pkg)
+			for (const [pkg, src] of Object.entries(packages)) {
+				if (
+					changedFilesInCommit.some((changedFile) =>
+						changedFile.startsWith(src),
+					)
+				) {
+					if (!(pkg in acc)) {
+						acc[pkg] = { features: [], bugfixes: [], other: [], breaking: [] }
 					}
-					if (type === "feat") {
-						acc[pkg].features.push(commit)
-						if (commit.body.includes(BREAKING_COMMIT_MSG)) {
-							const [, changesBody] = commit.body.split(BREAKING_COMMIT_MSG)
-							acc[pkg].breaking.push({
-								...commit,
-								body: changesBody.trim(),
-							})
+					const { type } = commit.parsed
+					if (RELEASE_COMMIT_TYPES.includes(type)) {
+						if (!packagesNeedRelease.includes(pkg)) {
+							packagesNeedRelease.push(pkg)
 						}
-					} else acc[pkg].bugfixes.push(commit)
-				} else {
-					acc[pkg].other.push(commit)
+						if (type === "feat") {
+							acc[pkg].features.push(commit)
+							if (commit.body.includes(BREAKING_COMMIT_MSG)) {
+								const [, changesBody] = commit.body.split(BREAKING_COMMIT_MSG)
+								acc[pkg].breaking.push({
+									...commit,
+									body: changesBody.trim(),
+								})
+							}
+						} else acc[pkg].bugfixes.push(commit)
+					} else {
+						acc[pkg].other.push(commit)
+					}
 				}
 			}
-		}
-		return acc
-	}, {} as Record<string, GrouppedCommits>)
+			return acc
+		},
+		{} as Record<string, GrouppedCommits>,
+	)
 
 	if (packagesNeedRelease.length) {
 		console.log(
 			packagesNeedRelease.length,
-			`new release(s) needed: ${packagesNeedRelease.join(", ")}`
+			`new release(s) needed: ${packagesNeedRelease.join(", ")}`,
 		)
 	} else {
 		console.log("No packages needed a new release, BYE!")

@@ -19,17 +19,17 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	const { dryRun, RELEASE_COMMIT_MSG } = options
 
 	execSync("pnpm build")
-	
+
 	await sortByDependency(packages)
 
 	for await (const pkg of packages) {
 		if (dryRun) {
 			console.log(
-				`Dry run, \`npm publish\` would have released package \`${pkg.name}\` with version "${pkg.newVersion}".`
+				`Dry run, \`npm publish\` would have released package \`${pkg.name}\` with version "${pkg.newVersion}".`,
 			)
 		} else {
 			console.log(
-				`Writing version "${pkg.newVersion}" to package.json for package \`${pkg.name}\``
+				`Writing version "${pkg.newVersion}" to package.json for package \`${pkg.name}\``,
 			)
 			await pkgJson.update(pkg.path, { version: pkg.newVersion })
 			console.log("package.json file has been written, publishing...")
@@ -40,13 +40,13 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 
 		if (dryRun) {
 			console.log(
-				`Dry run, skip \`npm publish\` for package \`${pkg.name}\`...\n`
+				`Dry run, skip \`npm publish\` for package \`${pkg.name}\`...\n`,
 			)
 			npmPublish += " --dry-run --silent"
 		} else {
 			execSync(
 				"echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc",
-				{ cwd: pkg.path }
+				{ cwd: pkg.path },
 			)
 		}
 
@@ -58,7 +58,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	} else {
 		console.log("Commiting.")
 		execSync(
-			`git config --local user.name "GitHub Actions" && git config --local user.email "actions@github.com"`
+			`git config --local user.name "GitHub Actions" && git config --local user.email "actions@github.com"`,
 		)
 		execSync(`git add -A && git commit -m "${RELEASE_COMMIT_MSG}"`)
 		console.log("Commited.")
@@ -69,7 +69,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		const gitTag = `${name}@${newVersion}`
 
 		console.log(
-			`\n\n-------------------------------\n${name} ${oldVersion} -> ${newVersion}`
+			`\n\n-------------------------------\n${name} ${oldVersion} -> ${newVersion}`,
 		)
 
 		const changelog = createChangelog(pkg)
@@ -85,10 +85,9 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 			execSync(`gh release create ${gitTag} --notes '${changelog}'`)
 		}
 	}
-        console.log("Pushing commits")
+	console.log("Pushing commits")
 	if (dryRun) execSync(`git push --dry-run`)
 	else execSync(`git push`)
-	
 }
 
 function createChangelog(pkg: PackageToRelease) {

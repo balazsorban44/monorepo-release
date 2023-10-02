@@ -9,8 +9,8 @@ export function shouldSkip(options: { releaseBranches: string[] }) {
 		console.log(`\nSkipping release for branch "${branch}"`)
 		console.log(
 			`Releases are only triggered for the following branches: ${releaseBranches.join(
-				", "
-			)}\n`
+				", ",
+			)}\n`,
 		)
 		return true
 	}

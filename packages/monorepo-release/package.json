@@ -1,52 +1,52 @@
 {
-  "name": "@balazsorban/monorepo-release",
-  "version": "0.1.8",
-  "description": "Similar to `semantic-release`, but for monorepos.",
-  "homepage": "https://github.com/balazsorban44/monorepo-release".
-  "bin": {
-    "release": "dist/index.js"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "type": "module",
-  "scripts": {
-    "test": "prettier -c src",
-    "dev": "tsc --watch",
-    "build": "tsc",
-    "prettier:fix": "prettier --write 'src'",
-    "prepublishOnly": "pnpm build",
-    "release": "node dist/index.js"
-  },
-  "dependencies": {
-    "@commitlint/parse": "17.0.0",
-    "git-log-parser": "1.2.0",
-    "semver": "7.3.7",
-    "stream-to-array": "2.3.0"
-  },
-  "devDependencies": {
-    "@types/node": "18.0.6",
-    "@types/semver": "7.3.10",
-    "prettier": "2.7.1",
-    "type-fest": "2.16.0",
-    "typescript": "4.7.4"
-  },
-  "keywords": [
-    "semantic-release",
-    "monorepo",
-    "release"
-  ],
-  "files": [
-    "dist"
-  ],
-  "author": "Balázs Orbán <info@balazsorban.com>",
-  "license": "ISC",
-  "prettier": {
-    "semi": false,
-    "useTabs": true,
-    "singleQuote": false
-  },
-  "engines": {
-    "node": ">=16.16.0"
-  }
+	"name": "@balazsorban/monorepo-release",
+	"version": "0.1.8",
+	"description": "Similar to `semantic-release`, but for monorepos.",
+	"homepage": "https://github.com/balazsorban44/monorepo-release",
+	"bin": {
+		"release": "dist/index.js"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"type": "module",
+	"scripts": {
+		"test": "prettier -c src",
+		"dev": "tsc --watch",
+		"build": "tsc",
+		"prettier:fix": "prettier --write 'src'",
+		"prepublishOnly": "pnpm build",
+		"release": "node dist/index.js"
+	},
+	"dependencies": {
+		"@commitlint/parse": "17.7.0",
+		"git-log-parser": "1.2.0",
+		"semver": "7.5.4",
+		"stream-to-array": "2.3.0"
+	},
+	"devDependencies": {
+		"@types/node": "20.8.0",
+		"@types/semver": "7.5.3",
+		"prettier": "3.0.3",
+		"type-fest": "4.3.3",
+		"typescript": "5.2.2"
+	},
+	"keywords": [
+		"semantic-release",
+		"monorepo",
+		"release"
+	],
+	"files": [
+		"dist"
+	],
+	"author": "Balázs Orbán <info@balazsorban.com>",
+	"license": "ISC",
+	"prettier": {
+		"semi": false,
+		"useTabs": true,
+		"singleQuote": false
+	},
+	"engines": {
+		"node": ">=18.18.0"
+	}
 }

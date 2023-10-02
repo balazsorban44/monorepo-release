@@ -6,25 +6,25 @@ import { execSync as nodeExecSync } from "node:child_process"
 import { Config, defaultConfig } from "./config.js"
 
 async function read(
-	directory: string
+	directory: string,
 ): Promise<Required<PackageJson & { release?: Partial<Config> }>> {
 	const content = await fs.readFile(
 		path.join(process.cwd(), directory, "package.json"),
-		"utf8"
+		"utf8",
 	)
 	return JSON.parse(content)
 }
 
 async function update(
 	directory: string,
-	data: Partial<PackageJson>
+	data: Partial<PackageJson>,
 ): Promise<void> {
 	const original = await pkgJson.read(directory)
 	const content = JSON.stringify({ ...original, ...data }, null, 2)
 	await fs.writeFile(
 		path.join(process.cwd(), directory, "package.json"),
 		content,
-		"utf8"
+		"utf8",
 	)
 }
 

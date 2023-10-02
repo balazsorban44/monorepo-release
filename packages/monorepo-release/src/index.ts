@@ -38,10 +38,10 @@ debug(
 					commits: `${p.commits.features.length} feature(s), ${p.commits.bugfixes.length} bugfixe(s), ${p.commits.other.length} other(s) and ${p.commits.breaking.length} breaking change(s)`,
 				},
 				null,
-				2
-			)
+				2,
+			),
 		)
-		.join("\n")
+		.join("\n"),
 )
 
 await publish(packages, config)
