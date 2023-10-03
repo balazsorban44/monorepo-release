@@ -15,20 +15,14 @@ jobs:
     environment: Production
     steps:
       - uses: actions/checkout@v3
-        name: Init
         with:
           fetch-depth: 100
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2.2.4
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - uses: pnpm/action-setup@v2.2.4
+      - uses: actions/setup-node@v3
         with:
-          node-version: 16
           cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install
-      - name: Publish to npm and GitHub
-        run: pnpm build && pnpm release
+      - run: pnpm install
+      - run: pnpm release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
