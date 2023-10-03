@@ -57,8 +57,8 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
 	log.info(
 		commitsSinceLatestTag.length,
-		pluralize("commit", commitsSinceLatestTag.length),
-		` found since \`${bold(latestTag)}\``,
+		pluralize("commit", commitsSinceLatestTag),
+		`found since \`${bold(latestTag)}\``,
 	)
 	log.debug(
 		"Analyzing the following commits:",
@@ -91,8 +91,8 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
 	log.info(
 		packageCommits.length,
-		pluralize("commit", packageCommits.length),
-		` touched package code`,
+		pluralize("commit", packageCommits),
+		`touched package code`,
 	)
 
 	log.debug("Identifying packages that need a new release...")
@@ -162,8 +162,8 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		)
 		log.info(
 			allPackagesToRelease.size,
-			pluralize("package", allPackagesToRelease.size),
-			`need to be released:`,
+			pluralize("package", allPackagesToRelease),
+			`need${allPackagesToRelease.size > 1 ? "" : "s"} to be released:`,
 			Array.from(allPackagesToRelease).join(", "),
 		)
 	} else {

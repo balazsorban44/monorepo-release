@@ -86,7 +86,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		execSync(`git push`)
 	}
 
-	log.info(green(bold("Done!")))
+	console.timeEnd(green(bold("Done")))
 }
 
 function createChangelog(pkg: PackageToRelease) {

@@ -8,6 +8,8 @@ import { bold, green } from "yoctocolors"
 const userConfig = {} // TODO: Allow user config
 const config = { ...defaultConfig, ...userConfig }
 
+console.time(green(bold("Done")))
+
 if (config.dryRun) {
 	log.info(bold(green("Performing dry run, no packages will be released!\n")))
 } else {
@@ -21,9 +23,9 @@ if (shouldSkip({ releaseBranches: config.releaseBranches })) {
 }
 
 if (config.dryRun) {
-	log.debug("Dry run, skipping token validation...\n")
+	log.debug("Dry run, skipping token validation...")
 } else if (config.noVerify) {
-	log.info("--no-verify or NO_VERIFY set, skipping token validation...\n")
+	log.info("--no-verify or NO_VERIFY set, skipping token validation...")
 } else {
 	if (!process.env.NPM_TOKEN) throw new Error("NPM_TOKEN is not set")
 	if (!process.env.GITHUB_TOKEN) throw new Error("GITHUB_TOKEN is not set")
@@ -34,16 +36,11 @@ const packages = await analyze(defaultConfig)
 log.debug(
 	"Packages to release:",
 	packages
-		.map((p) =>
-			JSON.stringify(
-				{
-					...p,
-					commits: `${p.commits.features.length} feature(s), ${p.commits.bugfixes.length} bugfixe(s), ${p.commits.other.length} other(s) and ${p.commits.breaking.length} breaking change(s)`,
-				},
-				null,
-				2,
-			),
-		)
+		.map((p) => {
+			const { features, bugfixes, other, breaking } = p.commits
+			const commits = `${features.length} feature(s), ${bugfixes.length} bugfixe(s), ${other.length} other(s) and ${breaking.length} breaking change(s)`
+			return JSON.stringify({ ...p, commits }, null, 2)
+		})
 		.join("\n"),
 )
 
