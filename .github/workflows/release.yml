@@ -27,5 +27,3 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          DRY_RUN: 1
-          VERBOSE: 1
