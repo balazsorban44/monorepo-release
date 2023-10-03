@@ -72,7 +72,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		return []
 	}
 
-	log.debug("Identifying commits that touched package code...")
+	log.debug("Identifying commits that modified package code...")
 	function getChangedFiles(commitSha: string) {
 		return execSync(
 			`git diff-tree --no-commit-id --name-only -r ${commitSha}`,
@@ -92,7 +92,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	log.info(
 		packageCommits.length,
 		pluralize("commit", packageCommits),
-		`touched package code`,
+		`modified package code`,
 	)
 
 	log.debug("Identifying packages that need a new release...")
