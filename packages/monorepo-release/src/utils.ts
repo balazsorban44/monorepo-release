@@ -34,7 +34,7 @@ export const log = {
 	debug(...args) {
 		if (!defaultConfig.verbose) return
 		const [first, ...rest] = args
-		console.log(gray("\n[debug]"), `${first}\n${rest.join("\n")}\n`)
+		console.log(gray("[debug]"), `${first}\n${rest.join("\n")}`)
 	},
 	info(...args) {
 		console.log(blue("[info]"), ...args)
