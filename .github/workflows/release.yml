@@ -22,6 +22,7 @@ jobs:
         with:
           cache: "pnpm"
       - run: pnpm install
+      - run: pnpm build
       - run: pnpm release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
