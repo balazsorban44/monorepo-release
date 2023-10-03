@@ -47,3 +47,16 @@ export const log = {
 export function execSync(...args: Parameters<typeof nodeExecSync>) {
 	return nodeExecSync(args[0], { stdio: "inherit", ...args[1] })
 }
+
+export function pluralize(word: string, count: number) {
+	const pluralRules = new Intl.PluralRules("en", { type: "cardinal" })
+	const pluralForm = pluralRules.select(count)
+	switch (pluralForm) {
+		case "one":
+			return word
+		case "other":
+			return word + "s" // simple pluralization, may need adjustment based on the word
+		default:
+			return word
+	}
+}

@@ -1,4 +1,4 @@
-import { bold } from "yoctocolors"
+import { bold, green } from "yoctocolors"
 import { type Config } from "./config.js"
 import type { Commit, PackageToRelease } from "./types.js"
 
@@ -26,11 +26,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	for await (const pkg of packages) {
 		if (dryRun) {
 			log.info(
-				`Dry run, \`${bold(
-					"npm publish",
-				)}\` would have released package \`${bold(
-					pkg.name,
-				)}\` with version \`${bold(pkg.newVersion)}\`.`,
+				`Dry run won't release \`${bold(pkg.name + "@" + pkg.newVersion)}\``,
 			)
 		} else {
 			log.info(
@@ -43,11 +39,9 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		}
 
 		let npmPublish = `pnpm publish --access public --registry=https://registry.npmjs.org --no-git-checks`
-		// We use different tokens for `next-auth` and `@next-auth/*` packages
-
 		if (dryRun) {
-			log.info(`Dry run, skip \`npm publish\` for package \`${pkg.name}\`...\n`)
-			npmPublish += " --dry-run --silent"
+			npmPublish += " --dry-run"
+			if (!options.verbose) npmPublish += " --silent"
 		} else {
 			execSync(
 				"echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc",
@@ -59,9 +53,9 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	}
 
 	if (dryRun) {
-		log.info("Dry run, skip release commit...")
+		log.debug("Dry run, skip release commit...")
 	} else {
-		log.info("Commiting.")
+		log.debug("Commiting.")
 		execSync(
 			`git config --local user.name "GitHub Actions" && git config --local user.email "actions@github.com"`,
 		)
@@ -70,21 +64,13 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	}
 
 	for (const pkg of packages) {
-		const { name, oldVersion, newVersion } = pkg
+		const { name, newVersion } = pkg
 		const gitTag = `${name}@${newVersion}`
-
-		log.info(
-			`\n\n-------------------------------\n${name} ${oldVersion} -> ${newVersion}`,
-		)
 
 		const changelog = createChangelog(pkg)
 		log.debug(`Changelog generated for \`${bold(pkg.name)}\`:\n`, changelog)
 
-		if (dryRun) {
-			log.info(
-				`Dry run, skip git tag/release notes for package \`${bold(name)}\``,
-			)
-		} else {
+		if (!dryRun) {
 			log.info(`Creating git tag...`)
 			execSync(`git tag ${gitTag}`)
 			execSync("git push --tags")
@@ -92,16 +78,22 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 			execSync(`gh release create ${gitTag} --notes '${changelog}'`)
 		}
 	}
-	log.info("Pushing commits")
-	if (dryRun) execSync(`git push --dry-run`)
-	else execSync(`git push`)
+	if (dryRun) {
+		log.debug("Pushing commits (dry run)")
+		execSync(`git push --dry-run`)
+	} else {
+		log.info("Pushing commits")
+		execSync(`git push`)
+	}
+
+	log.info(green(bold("Done!")))
 }
 
 function createChangelog(pkg: PackageToRelease) {
 	const {
 		commits: { features, breaking, bugfixes, other },
 	} = pkg
-	log.info(`Generating changelog for package \`${bold(pkg.name)}\`...`)
+	log.debug(`Generating changelog for package \`${bold(pkg.name)}\`...`)
 
 	let changelog = ``
 	changelog += listGroup("Features", features)

@@ -1,20 +1,28 @@
 import type { Commit, GrouppedCommits, PackageToRelease } from "./types.js"
 import type { Config } from "./config.js"
 import { bold } from "yoctocolors"
-import { log, execSync } from "./utils.js"
+import { log, execSync, pluralize } from "./utils.js"
 import semver from "semver"
 import * as commitlint from "@commitlint/parse"
 import gitLog from "git-log-parser"
 import streamToArray from "stream-to-array"
-import { getPackages } from "@manypkg/get-packages"
+import { type Package, getPackages } from "@manypkg/get-packages"
+import { getDependentsGraph } from "@changesets/get-dependents-graph"
 
 export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	const { BREAKING_COMMIT_MSG, RELEASE_COMMIT_MSG, RELEASE_COMMIT_TYPES } =
 		config
 
-	const packageList = await getPackages(process.cwd())
+	const packages = await getPackages(process.cwd())
+	const packageList = packages.packages.filter((p) => !p.packageJson.private)
+	const dependentsGraph = await getDependentsGraph({
+		...packages,
+		packages: packageList,
+		// @ts-expect-error See: https://github.com/Thinkmill/manypkg/blob/main/packages/get-packages/CHANGELOG.md#200
+		root: packages.rootPackage,
+	})
 
-	log.info("Identifying latest tag...")
+	log.debug("Identifying latest tag...")
 	const latestTag = execSync("git describe --tags --abbrev=0", {
 		stdio: "pipe",
 	})
@@ -23,9 +31,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
 	log.info(`Latest tag identified: \`${bold(latestTag)}\``)
 
-	log.info()
-
-	log.info("Identifying commits since the latest tag...")
+	log.debug("Identifying commits since the latest tag...")
 
 	// TODO: Allow passing in a range of commits to analyze and print the changelog
 	const range = `${latestTag}..HEAD`
@@ -51,7 +57,8 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
 	log.info(
 		commitsSinceLatestTag.length,
-		`commits found since \`${bold(latestTag)}\``,
+		pluralize("commit", commitsSinceLatestTag.length),
+		` found since \`${bold(latestTag)}\``,
 	)
 	log.debug(
 		"Analyzing the following commits:",
@@ -65,8 +72,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		return []
 	}
 
-	log.info()
-	log.info("Identifying commits that touched package code...")
+	log.debug("Identifying commits that touched package code...")
 	function getChangedFiles(commitSha: string) {
 		return execSync(
 			`git diff-tree --no-commit-id --name-only -r ${commitSha}`,
@@ -78,37 +84,53 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	}
 	const packageCommits = commitsSinceLatestTag.filter(({ commit }) => {
 		const changedFiles = getChangedFiles(commit.short)
-		return packageList.packages.some(({ relativeDir }) =>
+		return packageList.some(({ relativeDir }) =>
 			changedFiles.some((changedFile) => changedFile.startsWith(relativeDir)),
 		)
 	})
 
-	log.info(packageCommits.length, "commits touched package code")
+	log.info(
+		packageCommits.length,
+		pluralize("commit", packageCommits.length),
+		` touched package code`,
+	)
 
-	log.info()
+	log.debug("Identifying packages that need a new release...")
 
-	log.info("Identifying packages that need a new release...")
-
-	const packagesNeedRelease: string[] = []
+	const packagesNeedRelease: Set<string> = new Set()
 	const grouppedPackages = packageCommits.reduce(
 		(acc, commit) => {
 			const changedFilesInCommit = getChangedFiles(commit.commit.short)
 
-			for (const { relativeDir, packageJson } of packageList.packages) {
+			for (const { relativeDir, packageJson } of packageList) {
 				const { name: pkg } = packageJson
 				if (
 					changedFilesInCommit.some((changedFile) =>
 						changedFile.startsWith(relativeDir),
 					)
 				) {
-					if (!(pkg in acc)) {
-						acc[pkg] = { features: [], bugfixes: [], other: [], breaking: [] }
+					const dependents = dependentsGraph.get(pkg) ?? []
+					// Add dependents to the list of packages that need a release
+					if (dependents.length) {
+						log.debug(
+							`\`${bold(pkg)}\` will also bump: ${dependents
+								.map((d) => bold(d))
+								.join(", ")}`,
+						)
 					}
+
+					if (!(pkg in acc))
+						acc[pkg] = {
+							features: [],
+							bugfixes: [],
+							other: [],
+							breaking: [],
+							dependents,
+						}
+
 					const { type } = commit.parsed
 					if (RELEASE_COMMIT_TYPES.includes(type)) {
-						if (!packagesNeedRelease.includes(pkg)) {
-							packagesNeedRelease.push(pkg)
-						}
+						packagesNeedRelease.add(pkg)
 						if (type === "feat") {
 							acc[pkg].features.push(commit)
 							if (commit.body.includes(BREAKING_COMMIT_MSG)) {
@@ -129,19 +151,27 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		{} as Record<string, GrouppedCommits>,
 	)
 
-	if (packagesNeedRelease.length) {
+	if (packagesNeedRelease.size) {
+		const allPackagesToRelease = Object.entries(grouppedPackages).reduce(
+			(acc, [pkg, { dependents }]) => {
+				acc.add(bold(pkg))
+				for (const dependent of dependents) acc.add(bold(dependent))
+				return acc
+			},
+			new Set<string>(),
+		)
 		log.info(
-			packagesNeedRelease.length,
-			`new release(s) needed: ${packagesNeedRelease.join(", ")}`,
+			allPackagesToRelease.size,
+			pluralize("package", allPackagesToRelease.size),
+			`need to be released:`,
+			Array.from(allPackagesToRelease).join(", "),
 		)
 	} else {
-		log.info("No packages needed a new release, exiting!")
+		log.info("No need to release, exiting.")
 		process.exit(0)
 	}
 
-	log.info()
-
-	const packagesToRelease: PackageToRelease[] = []
+	const packagesToRelease: Map<string, PackageToRelease> = new Map()
 	for await (const pkgName of packagesNeedRelease) {
 		const commits = grouppedPackages[pkgName]
 		const releaseType: semver.ReleaseType = commits.breaking.length
@@ -150,20 +180,78 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 			? "minor" // x.1.x
 			: "patch" // x.x.1
 
-		const { packageJson, relativeDir } = packageList.packages.find(
-			(pkg) => pkg.packageJson.name === pkgName,
-		)!
-		const oldVersion = packageJson.version!
-		const newSemVer = semver.parse(semver.inc(oldVersion, releaseType))!
-
-		packagesToRelease.push({
-			name: pkgName,
-			oldVersion,
-			newVersion: `${newSemVer.major}.${newSemVer.minor}.${newSemVer.patch}`,
+		addToPackagesToRelease(
+			packageList,
+			pkgName,
+			releaseType,
+			packagesToRelease,
 			commits,
-			relativeDir,
-		})
+		)
+
+		const { dependents } = grouppedPackages[pkgName]
+		for (const dependent of dependents)
+			addToPackagesToRelease(
+				packageList,
+				dependent,
+				"patch",
+				packagesToRelease,
+				{
+					features: [],
+					bugfixes: [],
+					breaking: [],
+					// List dependency commits under the dependent's "other" category
+					other: overrideScope(
+						[...commits.features, ...commits.bugfixes],
+						pkgName,
+					),
+					dependents: [],
+				},
+			)
 	}
 
-	return packagesToRelease
+	return Array.from(packagesToRelease.values())
+}
+
+function addToPackagesToRelease(
+	packageList: Package[],
+	pkgName: string,
+	releaseType: semver.ReleaseType,
+	packagesToRelease: Map<string, PackageToRelease>,
+	commits: GrouppedCommits,
+) {
+	const { packageJson, relativeDir } = packageList.find(
+		(pkg) => pkg.packageJson.name === pkgName,
+	)!
+	const oldVersion = packageJson.version!
+	const newSemVer = semver.parse(semver.inc(oldVersion, releaseType))!
+
+	const pkgToRelease: PackageToRelease = {
+		name: pkgName,
+		oldVersion,
+		relativeDir,
+		commits,
+		newVersion: `${newSemVer.major}.${newSemVer.minor}.${newSemVer.patch}`,
+	}
+
+	// Handle dependents
+	const pkg = packagesToRelease.get(pkgName)
+	if (pkg) {
+		// If the package is already in the list of packages to release we need to
+		// bump the version to set the highest semver of the existing and the new one.
+		if (semver.gt(pkg.newVersion, newSemVer)) {
+			pkgToRelease.newVersion = pkg.newVersion
+		}
+
+		pkgToRelease.commits.features.push(...pkg.commits.features)
+		pkgToRelease.commits.bugfixes.push(...pkg.commits.bugfixes)
+	}
+
+	packagesToRelease.set(pkgName, pkgToRelease)
+}
+
+function overrideScope(commits: Commit[], scope): Commit[] {
+	return commits.map((commit) => {
+		commit.parsed.scope = scope
+		return commit
+	})
 }
