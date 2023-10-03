@@ -67,7 +67,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		const { name, newVersion } = pkg
 		const gitTag = `${name}@${newVersion}`
 
-		const changelog = createChangelog(pkg)
+		const changelog = createChangelog(pkg).trim()
 		log.debug(`Changelog generated for \`${bold(pkg.name)}\`:\n`, changelog)
 
 		if (!dryRun) {
