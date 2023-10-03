@@ -22,7 +22,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		root: packages.rootPackage,
 	})
 
-	log.debug("Identifying latest tag...")
+	log.debug("Identifying latest tag.")
 	const latestTag = execSync("git describe --tags --abbrev=0", {
 		stdio: "pipe",
 	})
@@ -31,7 +31,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
 	log.info(`Latest tag identified: \`${bold(latestTag)}\``)
 
-	log.debug("Identifying commits since the latest tag...")
+	log.debug("Identifying commits since the latest tag.")
 
 	// TODO: Allow passing in a range of commits to analyze and print the changelog
 	const range = `${latestTag}..HEAD`
@@ -68,11 +68,11 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	const lastCommit = commitsSinceLatestTag[0]
 
 	if (lastCommit?.parsed.raw === RELEASE_COMMIT_MSG) {
-		log.debug("Already released...")
-		return []
+		log.debug("Already released.")
+		process.exit(0)
 	}
 
-	log.debug("Identifying commits that modified package code...")
+	log.debug("Identifying commits that modified package code.")
 	function getChangedFiles(commitSha: string) {
 		return execSync(
 			`git diff-tree --no-commit-id --name-only -r ${commitSha}`,
@@ -95,7 +95,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		`modified package code`,
 	)
 
-	log.debug("Identifying packages that need a new release...")
+	log.debug("Identifying packages that need a new release.")
 
 	const packagesNeedRelease: Set<string> = new Set()
 	const grouppedPackages = packageCommits.reduce(

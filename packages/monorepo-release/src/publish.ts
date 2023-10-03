@@ -53,7 +53,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 	}
 
 	if (dryRun) {
-		log.debug("Dry run, skip release commit...")
+		log.debug("Dry run, skip release commit.")
 	} else {
 		log.debug("Commiting.")
 		execSync(
@@ -71,10 +71,10 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		log.debug(`Changelog generated for \`${bold(pkg.name)}\`:\n`, changelog)
 
 		if (!dryRun) {
-			log.info(`Creating git tag...`)
+			log.info(`Creating git tag.`)
 			execSync(`git tag ${gitTag}`)
 			execSync("git push --tags")
-			log.info(`Creating GitHub release notes...`)
+			log.info(`Creating GitHub release notes.`)
 			execSync(`gh release create ${gitTag} --notes '${changelog}'`)
 		}
 	}
@@ -93,7 +93,7 @@ function createChangelog(pkg: PackageToRelease) {
 	const {
 		commits: { features, breaking, bugfixes, other },
 	} = pkg
-	log.debug(`Generating changelog for package \`${bold(pkg.name)}\`...`)
+	log.debug(`Generating changelog for package \`${bold(pkg.name)}\`.`)
 
 	let changelog = ``
 	changelog += listGroup("Features", features)
