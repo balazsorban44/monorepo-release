@@ -121,7 +121,7 @@ function sortByScope(commits: Commit[]) {
 }
 
 function header(c: Commit) {
-	let h = c.parsed.subject
+	let h = c.parsed.subject ?? c.parsed.header
 	if (c.parsed.scope) {
 		h = `**${c.parsed.scope}**: ${h} (${c.commit.short})`
 	}
