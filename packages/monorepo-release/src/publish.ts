@@ -28,15 +28,15 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 			log.info(
 				`Dry run won't release \`${bold(pkg.name + "@" + pkg.newVersion)}\``,
 			)
-		} else {
-			log.info(
-				`Writing version "${bold(
-					pkg.newVersion,
-				)}" to package.json for package \`${bold(pkg.name)}\``,
-			)
-			await pkgJson.update(pkg.relativeDir, { version: pkg.newVersion })
-			log.info("package.json file has been written, publishing...")
 		}
+
+		log.debug(
+			`Writing version "${bold(
+				pkg.newVersion,
+			)}" to package.json for package \`${bold(pkg.name)}\``,
+		)
+		await pkgJson.update(pkg.relativeDir, { version: pkg.newVersion })
+		log.info("package.json file has been written, publishing.")
 
 		let npmPublish = `pnpm publish --access public --registry=https://registry.npmjs.org --no-git-checks`
 		if (dryRun) {
@@ -50,6 +50,11 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		}
 
 		execSync(npmPublish, { cwd: pkg.relativeDir })
+
+		if (dryRun) {
+			log.debug("Dry run, reverting version change.")
+			await pkgJson.update(pkg.relativeDir, { version: pkg.oldVersion })
+		}
 	}
 
 	if (dryRun) {
