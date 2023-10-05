@@ -8,6 +8,7 @@ import gitLog from "git-log-parser"
 import streamToArray from "stream-to-array"
 import { type Package, getPackages } from "@manypkg/get-packages"
 import { getDependentsGraph } from "@changesets/get-dependents-graph"
+import { exit } from "./index.js"
 
 export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	const { BREAKING_COMMIT_MSG, RELEASE_COMMIT_MSG, RELEASE_COMMIT_TYPES } =
@@ -62,14 +63,14 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 	)
 	log.debug(
 		"Analyzing the following commits:",
-		commitsSinceLatestTag.map((c) => `  ${c.subject}`).join("\n"),
+		...commitsSinceLatestTag.map((c) => `  ${c.subject}`),
 	)
 
 	const lastCommit = commitsSinceLatestTag[0]
 
 	if (lastCommit?.parsed.raw === RELEASE_COMMIT_MSG) {
 		log.debug("Already released.")
-		process.exit(0)
+		exit()
 	}
 
 	log.debug("Identifying commits that modified package code.")
@@ -168,7 +169,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 		)
 	} else {
 		log.info("No need to release, exiting.")
-		process.exit(0)
+		exit()
 	}
 
 	const packagesToRelease: Map<string, PackageToRelease> = new Map()
@@ -209,7 +210,19 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 			)
 	}
 
-	return Array.from(packagesToRelease.values())
+	const result = Array.from(packagesToRelease.values())
+
+	if (config.peek) {
+		log.peekInfo(
+			"Following packages can be released:\n",
+			...result.map(
+				(p) => `  - ${bold(p.name)}: ${p.oldVersion} -> ${p.newVersion}`,
+			),
+		)
+		exit()
+	}
+
+	return result
 }
 
 function addToPackagesToRelease(

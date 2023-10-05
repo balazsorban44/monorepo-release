@@ -43,7 +43,12 @@ export const log = {
 		console.log(gray("[debug]"), `${first}\n${rest.join("\n")}`.trim())
 	},
 	info(...args) {
+		if (defaultConfig.peek) return
 		console.log(blue("[info]"), ...purpleNumber(args))
+	},
+	/** Runs even if `config.peek` is set */
+	peekInfo(...args) {
+		console.log(args.join("\n"))
 	},
 	error(error: Error) {
 		console.error(red("\n[error]"), error, "\n")

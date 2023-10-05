@@ -8,6 +8,7 @@ export interface Config {
 	noVerify: boolean
 	dryRun: boolean
 	verbose: boolean
+	peek: boolean
 }
 
 const json = await pkgJson.read("./")
@@ -23,5 +24,6 @@ export const defaultConfig: Config = {
 		!!process.env.DRY_RUN ||
 		process.argv.includes("--dry-run"),
 	verbose: !!process.env.VERBOSE || process.argv.includes("--verbose"),
+	peek: !!process.env.PEEK || process.argv.includes("--peek"),
 	...json.release,
 }

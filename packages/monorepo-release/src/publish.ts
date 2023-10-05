@@ -1,8 +1,9 @@
-import { bold, green } from "yoctocolors"
+import { bold } from "yoctocolors"
 import { type Config } from "./config.js"
 import type { Commit, PackageToRelease } from "./types.js"
 
 import { log, pkgJson, execSync } from "./utils.js"
+import { exit } from "./index.js"
 
 /** Make sure that packages that depend on other packages are released last. */
 async function sortByDependency(pkgs: PackageToRelease[]) {
@@ -91,7 +92,7 @@ export async function publish(packages: PackageToRelease[], options: Config) {
 		execSync(`git push`)
 	}
 
-	console.timeEnd(green(bold("Done")))
+	exit()
 }
 
 function createChangelog(pkg: PackageToRelease) {

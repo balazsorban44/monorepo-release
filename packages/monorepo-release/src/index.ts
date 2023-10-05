@@ -3,24 +3,29 @@ import { shouldSkip } from "./skip.js"
 import { analyze } from "./analyze.js"
 import { publish } from "./publish.js"
 import { log } from "./utils.js"
-import { bold, green } from "yoctocolors"
+import { bold } from "yoctocolors"
 
 const userConfig = {} // TODO: Allow user config
 const config = { ...defaultConfig, ...userConfig }
 
-console.time(green(bold("Done")))
+const endMsg = bold("Done")
+
+console.time(endMsg)
+export function exit() {
+	console.log()
+	console.timeEnd(endMsg)
+	process.exit(0)
+}
 
 if (config.dryRun) {
-	log.info(bold(green("Performing dry run, no packages will be released!\n")))
+	log.peekInfo(bold("Performing dry run, no packages will be released!\n"))
 } else {
-	log.info(bold(green("Let's release some packages!\n")))
+	log.info(bold("Let's release some packages!\n"))
 }
 
 log.debug("Configuration:", JSON.stringify(config, null, 2))
 
-if (shouldSkip({ releaseBranches: config.releaseBranches })) {
-	process.exit(0)
-}
+if (shouldSkip({ releaseBranches: config.releaseBranches })) exit()
 
 if (config.dryRun) {
 	log.debug("Dry run, skipping token validation...")
