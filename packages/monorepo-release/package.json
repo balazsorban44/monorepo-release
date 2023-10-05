@@ -1,6 +1,6 @@
 {
   "name": "@balazsorban/monorepo-release",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Similar to `semantic-release`, but for monorepos.",
   "homepage": "https://github.com/balazsorban44/monorepo-release",
   "bin": {
