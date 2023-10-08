@@ -1,56 +1,56 @@
 export interface Commit {
-	commit: CommitOrTree
-	tree: CommitOrTree
-	author: AuthorOrCommitter
-	committer: AuthorOrCommitter
-	subject: string
-	body: string
-	parsed: Parsed
+  commit: CommitOrTree
+  tree: CommitOrTree
+  author: AuthorOrCommitter
+  committer: AuthorOrCommitter
+  subject: string
+  body: string
+  parsed: Parsed
 }
 
 export interface CommitOrTree {
-	long: string
-	short: string
+  long: string
+  short: string
 }
 
 export interface AuthorOrCommitter {
-	name: string
-	email: string
-	date: string
+  name: string
+  email: string
+  date: string
 }
 
 export interface Parsed {
-	type: string
-	scope?: string | null
-	subject: string
-	merge?: null
-	header: string
-	body?: null
-	footer?: null
-	notes?: null[] | null
-	references?: null[] | null
-	mentions?: null[] | null
-	revert?: null
-	raw: string
+  type: string
+  scope?: string | null
+  subject: string
+  merge?: null
+  header: string
+  body?: null
+  footer?: null
+  notes?: null[] | null
+  references?: null[] | null
+  mentions?: null[] | null
+  revert?: null
+  raw: string
 }
 
 export interface BranchConfig {
-	prerelease: boolean
-	ghRelease: boolean
+  prerelease: boolean
+  ghRelease: boolean
 }
 
 export interface PackageToRelease {
-	name: string
-	newVersion: string
-	oldVersion: string
-	commits: GrouppedCommits
-	relativeDir: string
+  name: string
+  newVersion: string
+  oldVersion: string
+  commits: GrouppedCommits
+  relativeDir: string
 }
 
 export interface GrouppedCommits {
-	features: Commit[]
-	bugfixes: Commit[]
-	other: Commit[]
-	breaking: Commit[]
-	dependents: string[]
+  features: Commit[]
+  bugfixes: Commit[]
+  other: Commit[]
+  breaking: Commit[]
+  dependents: string[]
 }

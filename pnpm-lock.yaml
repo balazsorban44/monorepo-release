@@ -33,8 +33,8 @@ importers:
         version: 1.0.0
     devDependencies:
       '@types/node':
-        specifier: 20.8.0
-        version: 20.8.0
+        specifier: 20.8.3
+        version: 20.8.3
       '@types/semver':
         specifier: 7.5.3
         version: 7.5.3
@@ -42,8 +42,8 @@ importers:
         specifier: 3.0.3
         version: 3.0.3
       type-fest:
-        specifier: 4.3.3
-        version: 4.3.3
+        specifier: 4.4.0
+        version: 4.4.0
       typescript:
         specifier: 5.2.2
         version: 5.2.2
@@ -189,8 +189,8 @@ packages:
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
     dev: false
 
-  /@types/node@20.8.0:
-    resolution: {integrity: sha512-LzcWltT83s1bthcvjBmiBvGJiiUe84NWRHkw+ZV6Fr41z2FbIzvc815dk2nQ3RAKMuN2fkenM/z3Xv2QzEpYxQ==}
+  /@types/node@20.8.3:
+    resolution: {integrity: sha512-jxiZQFpb+NlH5kjW49vXxvxTjeeqlbsnTAdBTKpzEdPs9itay7MscYXz3Fo9VYFEsfQ6LJFitHad3faerLAjCw==}
     dev: true
 
   /@types/normalize-package-data@2.4.2:
@@ -1024,8 +1024,8 @@ packages:
     engines: {node: '>=8'}
     dev: false
 
-  /type-fest@4.3.3:
-    resolution: {integrity: sha512-bxhiFii6BBv6UiSDq7uKTMyADT9unXEl3ydGefndVLxFeB44LRbT4K7OJGDYSyDrKnklCC1Pre68qT2wbUl2Aw==}
+  /type-fest@4.4.0:
+    resolution: {integrity: sha512-HT3RRs7sTfY22KuPQJkD/XjbTbxgP2Je5HPt6H6JEGvcjHd5Lqru75EbrP3tb4FYjNJ+DjLp+MNQTFQU0mhXNw==}
     engines: {node: '>=16'}
     dev: true
 

@@ -28,10 +28,10 @@
     "yoctocolors": "^1.0.0"
   },
   "devDependencies": {
-    "@types/node": "20.8.0",
+    "@types/node": "20.8.3",
     "@types/semver": "7.5.3",
     "prettier": "3.0.3",
-    "type-fest": "4.3.3",
+    "type-fest": "4.4.0",
     "typescript": "5.2.2"
   },
   "keywords": [
@@ -45,9 +45,7 @@
   "author": "Balázs Orbán <info@balazsorban.com>",
   "license": "ISC",
   "prettier": {
-    "semi": false,
-    "useTabs": true,
-    "singleQuote": false
+    "semi": false
   },
   "engines": {
     "node": ">=18.18.0"
