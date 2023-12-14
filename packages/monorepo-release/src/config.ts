@@ -9,6 +9,8 @@ export interface Config {
   dryRun: boolean
   verbose: boolean
   peek: boolean
+  /** Packages that should be ignored from the release process. */
+  ignorePackages: string[]
 }
 
 const json = await pkgJson.read("./")
@@ -27,5 +29,6 @@ export const defaultConfig: Config = {
     process.argv.includes("--dry-run"),
   verbose: !!process.env.VERBOSE || process.argv.includes("--verbose"),
   peek,
+  ignorePackages: [],
   ...json.release,
 }
