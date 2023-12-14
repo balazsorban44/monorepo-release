@@ -3,6 +3,7 @@ import { gray, blue, red, magenta, bold } from "yoctocolors"
 import fs from "node:fs/promises"
 import path from "node:path"
 import { execSync as nodeExecSync } from "node:child_process"
+import { Readable } from "node:stream"
 import { Config, defaultConfig } from "./config.js"
 
 async function read(
@@ -37,17 +38,17 @@ function purpleNumber(args: any[]) {
 }
 
 export const log = {
-  debug(...args) {
+  debug(...args: any[]) {
     if (!defaultConfig.verbose) return
     const [first, ...rest] = purpleNumber(args)
     console.log(gray("[debug]"), `${first}\n${rest.join("\n")}`.trim())
   },
-  info(...args) {
+  info(...args: any[]) {
     if (defaultConfig.peek) return
     console.log(blue("[info]"), ...purpleNumber(args))
   },
   /** Runs even if `config.peek` is set */
-  peekInfo(...args) {
+  peekInfo(...args: any[]) {
     console.log(args.join("\n"))
   },
   error(error: Error) {
@@ -80,4 +81,13 @@ export function pluralize(
     default:
       return word
   }
+}
+
+export function streamToArray(stream: Readable): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const arr: any[] = []
+    stream.on("data", (d) => arr.push(d))
+    stream.on("end", () => resolve(arr))
+    stream.on("error", reject)
+  })
 }

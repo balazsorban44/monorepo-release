@@ -1,11 +1,11 @@
 import type { Commit, GrouppedCommits, PackageToRelease } from "./types.js"
 import type { Config } from "./config.js"
 import { bold } from "yoctocolors"
-import { log, execSync, pluralize } from "./utils.js"
+import { log, execSync, pluralize, streamToArray } from "./utils.js"
 import semver from "semver"
 import * as commitlint from "@commitlint/parse"
+// @ts-expect-error no types
 import gitLog from "git-log-parser"
-import streamToArray from "stream-to-array"
 import { type Package, getPackages } from "@manypkg/get-packages"
 import { getDependentsGraph } from "@changesets/get-dependents-graph"
 import { exit } from "./index.js"
@@ -37,23 +37,16 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
   // TODO: Allow passing in a range of commits to analyze and print the changelog
   const range = `${latestTag}..HEAD`
 
+  const stream = gitLog.parse({ _: range })
+
   // Get the commits since the latest tag
-  const commitsSinceLatestTag = await new Promise<Commit[]>(
-    (resolve, reject) => {
-      const stream = gitLog.parse({ _: range })
-      streamToArray(stream, (err: Error, arr: any[]) => {
-        if (err) return reject(err)
-
-        Promise.all(
-          arr.map(async (d) => {
-            // @ts-ignore
-            const parsed = await commitlint.default.default(d.subject)
-
-            return { ...d, parsed }
-          }),
-        ).then((res) => resolve(res.filter(Boolean)))
-      })
-    },
+  const commitsSinceLatestTag = await streamToArray(stream).then((arr) =>
+    Promise.all(
+      arr.map(async (d) => {
+        d.parsed = await commitlint.default.default(d.subject)
+        return d
+      }),
+    ),
   )
 
   log.info(
@@ -99,58 +92,58 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
   log.debug("Identifying packages that need a new release.")
 
   const packagesNeedRelease: Set<string> = new Set()
-  const grouppedPackages = packageCommits.reduce(
-    (acc, commit) => {
-      const changedFilesInCommit = getChangedFiles(commit.commit.short)
+  const grouppedPackages = packageCommits.reduce<
+    Record<string, GrouppedCommits & { version: semver.SemVer | null }>
+  >((acc, commit) => {
+    const changedFilesInCommit = getChangedFiles(commit.commit.short)
 
-      for (const { relativeDir, packageJson } of packageList) {
-        const { name: pkg } = packageJson
-        if (
-          changedFilesInCommit.some((changedFile) =>
-            changedFile.startsWith(relativeDir),
+    for (const { relativeDir, packageJson } of packageList) {
+      const { name: pkg } = packageJson
+      if (
+        changedFilesInCommit.some((changedFile) =>
+          changedFile.startsWith(relativeDir),
+        )
+      ) {
+        const dependents = dependentsGraph.get(pkg) ?? []
+        // Add dependents to the list of packages that need a release
+        if (dependents.length) {
+          log.debug(
+            `\`${bold(pkg)}\` will also bump: ${dependents
+              .map((d) => bold(d))
+              .join(", ")}`,
           )
-        ) {
-          const dependents = dependentsGraph.get(pkg) ?? []
-          // Add dependents to the list of packages that need a release
-          if (dependents.length) {
-            log.debug(
-              `\`${bold(pkg)}\` will also bump: ${dependents
-                .map((d) => bold(d))
-                .join(", ")}`,
-            )
+        }
+
+        if (!(pkg in acc))
+          acc[pkg] = {
+            version: semver.parse(packageJson.version),
+            features: [],
+            bugfixes: [],
+            other: [],
+            breaking: [],
+            dependents,
           }
 
-          if (!(pkg in acc))
-            acc[pkg] = {
-              features: [],
-              bugfixes: [],
-              other: [],
-              breaking: [],
-              dependents,
+        const { type } = commit.parsed
+        if (RELEASE_COMMIT_TYPES.includes(type)) {
+          packagesNeedRelease.add(pkg)
+          if (type === "feat") {
+            acc[pkg].features.push(commit)
+            if (commit.body.includes(BREAKING_COMMIT_MSG)) {
+              const [, changesBody] = commit.body.split(BREAKING_COMMIT_MSG)
+              acc[pkg].breaking.push({
+                ...commit,
+                body: changesBody.trim(),
+              })
             }
-
-          const { type } = commit.parsed
-          if (RELEASE_COMMIT_TYPES.includes(type)) {
-            packagesNeedRelease.add(pkg)
-            if (type === "feat") {
-              acc[pkg].features.push(commit)
-              if (commit.body.includes(BREAKING_COMMIT_MSG)) {
-                const [, changesBody] = commit.body.split(BREAKING_COMMIT_MSG)
-                acc[pkg].breaking.push({
-                  ...commit,
-                  body: changesBody.trim(),
-                })
-              }
-            } else acc[pkg].bugfixes.push(commit)
-          } else {
-            acc[pkg].other.push(commit)
-          }
+          } else acc[pkg].bugfixes.push(commit)
+        } else {
+          acc[pkg].other.push(commit)
         }
       }
-      return acc
-    },
-    {} as Record<string, GrouppedCommits>,
-  )
+    }
+    return acc
+  }, {})
 
   if (packagesNeedRelease.size) {
     const allPackagesToRelease = Object.entries(grouppedPackages).reduce(
@@ -173,11 +166,15 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
   }
 
   const packagesToRelease: Map<string, PackageToRelease> = new Map()
-  for await (const pkgName of packagesNeedRelease) {
-    const commits = grouppedPackages[pkgName]
-    const releaseType: semver.ReleaseType = commits.breaking.length
-      ? "major" // 1.x.x
-      : commits.features.length
+  for (const pkgName of packagesNeedRelease) {
+    const pkg = grouppedPackages[pkgName]
+    const releaseType: semver.ReleaseType = pkg.breaking.length
+      ? // For 0.x.x we don't need to bump the major even if there are breaking changes
+        // https://semver.org/#spec-item-4
+        pkg.version?.major === 0
+        ? "minor" // x.1.x
+        : "major" // 1.x.x
+      : pkg.features.length
       ? "minor" // x.1.x
       : "patch" // x.x.1
 
@@ -186,7 +183,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
       pkgName,
       releaseType,
       packagesToRelease,
-      commits,
+      pkg,
     )
 
     const { dependents } = grouppedPackages[pkgName]
@@ -201,10 +198,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
           bugfixes: [],
           breaking: [],
           // List dependency commits under the dependent's "other" category
-          other: overrideScope(
-            [...commits.features, ...commits.bugfixes],
-            pkgName,
-          ),
+          other: overrideScope([...pkg.features, ...pkg.bugfixes], pkgName),
           dependents: [],
         },
       )
@@ -264,7 +258,7 @@ function addToPackagesToRelease(
   packagesToRelease.set(pkgName, pkgToRelease)
 }
 
-function overrideScope(commits: Commit[], scope): Commit[] {
+function overrideScope(commits: Commit[], scope: string): Commit[] {
   return commits.map((commit) => {
     commit.parsed.scope = scope
     return commit
