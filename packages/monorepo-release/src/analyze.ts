@@ -1,7 +1,7 @@
 import type { Commit, GrouppedCommits, PackageToRelease } from "./types.js"
 import type { Config } from "./config.js"
 import { bold } from "yoctocolors"
-import { log, execSync, pluralize } from "./utils.js"
+import { log, execSync, pluralize, streamToArray } from "./utils.js"
 import semver from "semver"
 import * as commitlint from "@commitlint/parse"
 // @ts-expect-error no types
@@ -9,16 +9,6 @@ import gitLog from "git-log-parser"
 import { type Package, getPackages } from "@manypkg/get-packages"
 import { getDependentsGraph } from "@changesets/get-dependents-graph"
 import { exit } from "./index.js"
-import { Readable } from "stream"
-
-function streamToArray(stream: Readable): Promise<any[]> {
-  return new Promise((resolve, reject) => {
-    const arr: any[] = []
-    stream.on("data", (d) => arr.push(d))
-    stream.on("end", () => resolve(arr))
-    stream.on("error", reject)
-  })
-}
 
 export async function analyze(config: Config): Promise<PackageToRelease[]> {
   const { BREAKING_COMMIT_MSG, RELEASE_COMMIT_MSG, RELEASE_COMMIT_TYPES } =

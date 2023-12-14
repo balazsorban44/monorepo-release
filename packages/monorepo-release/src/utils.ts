@@ -3,6 +3,7 @@ import { gray, blue, red, magenta, bold } from "yoctocolors"
 import fs from "node:fs/promises"
 import path from "node:path"
 import { execSync as nodeExecSync } from "node:child_process"
+import { Readable } from "node:stream"
 import { Config, defaultConfig } from "./config.js"
 
 async function read(
@@ -80,4 +81,13 @@ export function pluralize(
     default:
       return word
   }
+}
+
+export function streamToArray(stream: Readable): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const arr: any[] = []
+    stream.on("data", (d) => arr.push(d))
+    stream.on("end", () => resolve(arr))
+    stream.on("error", reject)
+  })
 }
