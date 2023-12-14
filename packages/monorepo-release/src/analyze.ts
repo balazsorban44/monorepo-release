@@ -4,7 +4,9 @@ import { bold } from "yoctocolors"
 import { log, execSync, pluralize } from "./utils.js"
 import semver from "semver"
 import * as commitlint from "@commitlint/parse"
+// @ts-expect-error no types
 import gitLog from "git-log-parser"
+// @ts-expect-error no types
 import streamToArray from "stream-to-array"
 import { type Package, getPackages } from "@manypkg/get-packages"
 import { getDependentsGraph } from "@changesets/get-dependents-graph"
@@ -102,54 +104,54 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
   const grouppedPackages = packageCommits.reduce<
     Record<string, GrouppedCommits & { version: semver.SemVer | null }>
   >((acc, commit) => {
-      const changedFilesInCommit = getChangedFiles(commit.commit.short)
+    const changedFilesInCommit = getChangedFiles(commit.commit.short)
 
-      for (const { relativeDir, packageJson } of packageList) {
-        const { name: pkg } = packageJson
-        if (
-          changedFilesInCommit.some((changedFile) =>
-            changedFile.startsWith(relativeDir),
+    for (const { relativeDir, packageJson } of packageList) {
+      const { name: pkg } = packageJson
+      if (
+        changedFilesInCommit.some((changedFile) =>
+          changedFile.startsWith(relativeDir),
+        )
+      ) {
+        const dependents = dependentsGraph.get(pkg) ?? []
+        // Add dependents to the list of packages that need a release
+        if (dependents.length) {
+          log.debug(
+            `\`${bold(pkg)}\` will also bump: ${dependents
+              .map((d) => bold(d))
+              .join(", ")}`,
           )
-        ) {
-          const dependents = dependentsGraph.get(pkg) ?? []
-          // Add dependents to the list of packages that need a release
-          if (dependents.length) {
-            log.debug(
-              `\`${bold(pkg)}\` will also bump: ${dependents
-                .map((d) => bold(d))
-                .join(", ")}`,
-            )
+        }
+
+        if (!(pkg in acc))
+          acc[pkg] = {
+            version: semver.parse(packageJson.version),
+            features: [],
+            bugfixes: [],
+            other: [],
+            breaking: [],
+            dependents,
           }
 
-          if (!(pkg in acc))
-            acc[pkg] = {
-              version: semver.parse(packageJson.version),
-              features: [],
-              bugfixes: [],
-              other: [],
-              breaking: [],
-              dependents,
+        const { type } = commit.parsed
+        if (RELEASE_COMMIT_TYPES.includes(type)) {
+          packagesNeedRelease.add(pkg)
+          if (type === "feat") {
+            acc[pkg].features.push(commit)
+            if (commit.body.includes(BREAKING_COMMIT_MSG)) {
+              const [, changesBody] = commit.body.split(BREAKING_COMMIT_MSG)
+              acc[pkg].breaking.push({
+                ...commit,
+                body: changesBody.trim(),
+              })
             }
-
-          const { type } = commit.parsed
-          if (RELEASE_COMMIT_TYPES.includes(type)) {
-            packagesNeedRelease.add(pkg)
-            if (type === "feat") {
-              acc[pkg].features.push(commit)
-              if (commit.body.includes(BREAKING_COMMIT_MSG)) {
-                const [, changesBody] = commit.body.split(BREAKING_COMMIT_MSG)
-                acc[pkg].breaking.push({
-                  ...commit,
-                  body: changesBody.trim(),
-                })
-              }
-            } else acc[pkg].bugfixes.push(commit)
-          } else {
-            acc[pkg].other.push(commit)
-          }
+          } else acc[pkg].bugfixes.push(commit)
+        } else {
+          acc[pkg].other.push(commit)
         }
       }
-      return acc
+    }
+    return acc
   }, {})
 
   if (packagesNeedRelease.size) {
@@ -263,7 +265,7 @@ function addToPackagesToRelease(
   packagesToRelease.set(pkgName, pkgToRelease)
 }
 
-function overrideScope(commits: Commit[], scope): Commit[] {
+function overrideScope(commits: Commit[], scope: string): Commit[] {
   return commits.map((commit) => {
     commit.parsed.scope = scope
     return commit
