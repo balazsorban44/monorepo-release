@@ -210,7 +210,9 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
       )
   }
 
-  const result = Array.from(packagesToRelease.values())
+  const result = Array.from(packagesToRelease.values()).filter(
+    (p) => !config.ignorePackages.includes(p.name),
+  )
 
   if (config.peek) {
     log.peekInfo(
