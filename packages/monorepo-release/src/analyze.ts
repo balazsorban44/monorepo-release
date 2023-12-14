@@ -99,8 +99,9 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
   log.debug("Identifying packages that need a new release.")
 
   const packagesNeedRelease: Set<string> = new Set()
-  const grouppedPackages = packageCommits.reduce(
-    (acc, commit) => {
+  const grouppedPackages = packageCommits.reduce<
+    Record<string, GrouppedCommits & { version: semver.SemVer | null }>
+  >((acc, commit) => {
       const changedFilesInCommit = getChangedFiles(commit.commit.short)
 
       for (const { relativeDir, packageJson } of packageList) {
@@ -122,6 +123,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
 
           if (!(pkg in acc))
             acc[pkg] = {
+              version: semver.parse(packageJson.version),
               features: [],
               bugfixes: [],
               other: [],
@@ -148,9 +150,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
         }
       }
       return acc
-    },
-    {} as Record<string, GrouppedCommits>,
-  )
+  }, {})
 
   if (packagesNeedRelease.size) {
     const allPackagesToRelease = Object.entries(grouppedPackages).reduce(
@@ -173,11 +173,15 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
   }
 
   const packagesToRelease: Map<string, PackageToRelease> = new Map()
-  for await (const pkgName of packagesNeedRelease) {
-    const commits = grouppedPackages[pkgName]
-    const releaseType: semver.ReleaseType = commits.breaking.length
-      ? "major" // 1.x.x
-      : commits.features.length
+  for (const pkgName of packagesNeedRelease) {
+    const pkg = grouppedPackages[pkgName]
+    const releaseType: semver.ReleaseType = pkg.breaking.length
+      ? // For 0.x.x we don't need to bump the major even if there are breaking changes
+        // https://semver.org/#spec-item-4
+        pkg.version?.major === 0
+        ? "minor" // x.1.x
+        : "major" // 1.x.x
+      : pkg.features.length
       ? "minor" // x.1.x
       : "patch" // x.x.1
 
@@ -186,7 +190,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
       pkgName,
       releaseType,
       packagesToRelease,
-      commits,
+      pkg,
     )
 
     const { dependents } = grouppedPackages[pkgName]
@@ -201,10 +205,7 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
           bugfixes: [],
           breaking: [],
           // List dependency commits under the dependent's "other" category
-          other: overrideScope(
-            [...commits.features, ...commits.bugfixes],
-            pkgName,
-          ),
+          other: overrideScope([...pkg.features, ...pkg.bugfixes], pkgName),
           dependents: [],
         },
       )
