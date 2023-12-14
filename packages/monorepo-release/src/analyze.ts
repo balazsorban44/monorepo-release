@@ -187,11 +187,22 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
     )
 
     const { dependents } = grouppedPackages[pkgName]
+
+    // Dependent versioning follows the same release type as the dependency,
+    // except for dependents, we should always bump the major version
+    // if there are breaking changes in the dependency, regardless if the
+    // dependency's current version is 0.x.x or 1.x.x
+    const dependentReleaseType: semver.ReleaseType = pkg.breaking.length
+      ? "major" // 1.x.x
+      : pkg.features.length
+      ? "minor" // x.1.x
+      : "patch" // x.x.1
+
     for (const dependent of dependents)
       addToPackagesToRelease(
         packageList,
         dependent,
-        "patch",
+        dependentReleaseType,
         packagesToRelease,
         {
           features: [],
