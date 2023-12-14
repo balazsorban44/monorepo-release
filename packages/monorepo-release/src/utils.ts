@@ -37,17 +37,17 @@ function purpleNumber(args: any[]) {
 }
 
 export const log = {
-  debug(...args) {
+  debug(...args: any[]) {
     if (!defaultConfig.verbose) return
     const [first, ...rest] = purpleNumber(args)
     console.log(gray("[debug]"), `${first}\n${rest.join("\n")}`.trim())
   },
-  info(...args) {
+  info(...args: any[]) {
     if (defaultConfig.peek) return
     console.log(blue("[info]"), ...purpleNumber(args))
   },
   /** Runs even if `config.peek` is set */
-  peekInfo(...args) {
+  peekInfo(...args: any[]) {
     console.log(args.join("\n"))
   },
   error(error: Error) {
