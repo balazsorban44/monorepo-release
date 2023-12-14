@@ -6,11 +6,19 @@ import semver from "semver"
 import * as commitlint from "@commitlint/parse"
 // @ts-expect-error no types
 import gitLog from "git-log-parser"
-// @ts-expect-error no types
-import streamToArray from "stream-to-array"
 import { type Package, getPackages } from "@manypkg/get-packages"
 import { getDependentsGraph } from "@changesets/get-dependents-graph"
 import { exit } from "./index.js"
+import { Readable } from "stream"
+
+function streamToArray(stream: Readable): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const arr: any[] = []
+    stream.on("data", (d) => arr.push(d))
+    stream.on("end", () => resolve(arr))
+    stream.on("error", reject)
+  })
+}
 
 export async function analyze(config: Config): Promise<PackageToRelease[]> {
   const { BREAKING_COMMIT_MSG, RELEASE_COMMIT_MSG, RELEASE_COMMIT_TYPES } =
@@ -39,23 +47,16 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
   // TODO: Allow passing in a range of commits to analyze and print the changelog
   const range = `${latestTag}..HEAD`
 
+  const stream = gitLog.parse({ _: range })
+
   // Get the commits since the latest tag
-  const commitsSinceLatestTag = await new Promise<Commit[]>(
-    (resolve, reject) => {
-      const stream = gitLog.parse({ _: range })
-      streamToArray(stream, (err: Error, arr: any[]) => {
-        if (err) return reject(err)
-
-        Promise.all(
-          arr.map(async (d) => {
-            // @ts-ignore
-            const parsed = await commitlint.default.default(d.subject)
-
-            return { ...d, parsed }
-          }),
-        ).then((res) => resolve(res.filter(Boolean)))
-      })
-    },
+  const commitsSinceLatestTag = await streamToArray(stream).then((arr) =>
+    Promise.all(
+      arr.map(async (d) => {
+        d.parsed = await commitlint.default.default(d.subject)
+        return d
+      }),
+    ),
   )
 
   log.info(
