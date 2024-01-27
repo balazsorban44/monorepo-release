@@ -7,6 +7,27 @@ on:
       - "main"
 
 jobs:
+  peek:
+    name: Peek new release
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          # Please upvote https://github.com/orgs/community/discussions/13836
+          token: ${{ secrets.GH_PAT }}
+      - uses: pnpm/action-setup@v2.2.4
+      - uses: actions/setup-node@v3
+        with:
+          cache: "pnpm"
+      - run: pnpm install
+      - run: pnpm build
+      - run: pnpm release --peek
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Please upvote https://github.com/orgs/community/discussions/13836
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
   release-branch:
     name: Publish branch
     runs-on: ubuntu-latest
