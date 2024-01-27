@@ -23,7 +23,7 @@ jobs:
           cache: "pnpm"
       - run: pnpm install
       - run: pnpm build
-      - run: pnpm release --peek
+      - run: pnpm release --verbose --dry
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           # Please upvote https://github.com/orgs/community/discussions/13836
