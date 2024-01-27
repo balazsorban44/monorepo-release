@@ -209,27 +209,39 @@ export async function analyze(config: Config): Promise<PackageToRelease[]> {
           bugfixes: [],
           breaking: [],
           // List dependency commits under the dependent's "other" category
-          other: overrideScope([...pkg.features, ...pkg.bugfixes], pkgName),
+          other: getDependencyMessage(
+            [...pkg.features, ...pkg.bugfixes],
+            pkgName,
+          ),
           dependents: [],
         },
       )
   }
 
-  const result = Array.from(packagesToRelease.values()).filter(
-    (p) => !config.ignorePackages.includes(p.name),
+  const { ignored, toRelease } = Array.from(packagesToRelease.values()).reduce(
+    (acc, p) => {
+      if (config.ignorePackages.includes(p.name)) acc.ignored.push(p)
+      else acc.toRelease.push(p)
+      return acc
+    },
+    { ignored: [] as PackageToRelease[], toRelease: [] as PackageToRelease[] },
   )
 
   if (config.peek) {
     log.peekInfo(
-      "Following packages can be released:\n",
-      ...result.map(
+      `Following packages are ignored from releasing:\n`,
+      ...ignored.map((p) => `  - ${bold(p.name)}`),
+    )
+    log.peekInfo(
+      "\nFollowing packages can be released:\n",
+      ...toRelease.map(
         (p) => `  - ${bold(p.name)}: ${p.oldVersion} -> ${p.newVersion}`,
       ),
     )
     exit()
   }
 
-  return result
+  return toRelease
 }
 
 function addToPackagesToRelease(
@@ -269,9 +281,26 @@ function addToPackagesToRelease(
   packagesToRelease.set(pkgName, pkgToRelease)
 }
 
-function overrideScope(commits: Commit[], scope: string): Commit[] {
-  return commits.map((commit) => {
-    commit.parsed.scope = scope
-    return commit
+function getDependencyMessage(commits: Commit[], scope: string): Commit[] {
+  const sorted = commits.sort((a, b) => {
+    const aDate = new Date(a.committer.date)
+    const bDate = new Date(b.committer.date)
+    return aDate.getTime() - bDate.getTime()
   })
+
+  // const first = sorted[0].commit.short
+  const last = sorted[sorted.length - 1].commit.short
+  const body = ""
+  // const body = ` ([compare changes](https://github.com/user/repository/compare/${first}..${last}))`
+  const short = last
+  const subject = `dependency update`
+  const type = "chore"
+  const raw = `${type}(${scope}): ${subject}`
+  return [
+    {
+      body,
+      commit: { short },
+      parsed: { type, subject, scope, header: raw, raw },
+    } as any,
+  ]
 }
