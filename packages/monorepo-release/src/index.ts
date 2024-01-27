@@ -1,12 +1,13 @@
-import { defaultConfig } from "./config.js"
+import { type Config, defaultConfig } from "./config.js"
 import { shouldSkip } from "./skip.js"
 import { analyze } from "./analyze.js"
 import { publish } from "./publish.js"
 import { log } from "./utils.js"
 import { bold } from "yoctocolors"
 
-const userConfig = {} // TODO: Allow user config
-const config = { ...defaultConfig, ...userConfig }
+// TODO: Allow user config
+const userConfig: Partial<Config> = {}
+const config = { ...defaultConfig, ...userConfig } satisfies Config
 
 const endMsg = bold("Done")
 
@@ -36,7 +37,7 @@ if (config.dryRun) {
   if (!process.env.GITHUB_TOKEN) throw new Error("GITHUB_TOKEN is not set")
 }
 
-const packages = await analyze(defaultConfig)
+const packages = await analyze(config)
 
 log.debug(
   "Packages to release:",
