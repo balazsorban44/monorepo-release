@@ -292,6 +292,7 @@ function getDependencyMessage(commits: Commit[], scope: string): Commit[] {
   const last = sorted[sorted.length - 1].commit.short
   const body = ""
   // const body = ` ([compare changes](https://github.com/user/repository/compare/${first}..${last}))`
+  // TODO: Instead of last commit, try to get a link to the dependency's release notes
   const short = last
   const subject = `dependency update`
   const type = "chore"
