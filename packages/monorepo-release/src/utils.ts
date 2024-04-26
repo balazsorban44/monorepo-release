@@ -24,8 +24,7 @@ async function update(
   const content = JSON.stringify({ ...original, ...data }, null, 2)
   await fs.writeFile(
     path.join(process.cwd(), directory, "package.json"),
-    content,
-    "utf8",
+    `${content}\n`,
   )
 }
 
