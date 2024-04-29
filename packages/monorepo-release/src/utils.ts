@@ -6,10 +6,14 @@ import { execSync as nodeExecSync } from "node:child_process"
 import { Readable } from "node:stream"
 import { Config, defaultConfig } from "./config.js"
 
+type PackageJsonRelease = PackageJson & { release: Partial<Config> }
+
+async function read(directory: string): Promise<PackageJsonRelease>
+async function read(directory: string, raw: true): Promise<string>
 async function read(
   directory: string,
-  raw?: boolean
-): Promise<Required<PackageJson & { release?: Partial<Config> }> | string> {
+  raw?: boolean,
+): Promise<PackageJsonRelease | string> {
   const content = await fs.readFile(
     path.join(process.cwd(), directory, "package.json"),
     "utf8",
@@ -21,7 +25,7 @@ async function update(
   directory: string,
   data: Partial<PackageJson>,
 ): Promise<void> {
-  const original = await pkgJson.read(directory, true) as string
+  const original = await pkgJson.read(directory, true)
   let content = JSON.stringify({ ...JSON.parse(original), ...data }, null, 2)
   content += original.endsWith("\r\n") ? "\r\n" : "\n"
   await fs.writeFile(
@@ -70,8 +74,8 @@ export function pluralize(
     typeof count === "number"
       ? count
       : count instanceof Set || count instanceof Map
-        ? count.size
-        : count.length
+      ? count.size
+      : count.length
 
   const pluralForm = pluralRules.select(count)
   switch (pluralForm) {
