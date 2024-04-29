@@ -8,24 +8,25 @@ import { Config, defaultConfig } from "./config.js"
 
 async function read(
   directory: string,
-): Promise<Required<PackageJson & { release?: Partial<Config> }>> {
+  raw?: boolean
+): Promise<Required<PackageJson & { release?: Partial<Config> }> | string> {
   const content = await fs.readFile(
     path.join(process.cwd(), directory, "package.json"),
     "utf8",
   )
-  return JSON.parse(content)
+  return raw ? content : JSON.parse(content)
 }
 
 async function update(
   directory: string,
   data: Partial<PackageJson>,
 ): Promise<void> {
-  const original = await pkgJson.read(directory)
-  const content = JSON.stringify({ ...original, ...data }, null, 2)
+  const original = await pkgJson.read(directory, true) as string
+  let content = JSON.stringify({ ...JSON.parse(original), ...data }, null, 2)
+  content += original.endsWith("\r\n") ? "\r\n" : "\n"
   await fs.writeFile(
     path.join(process.cwd(), directory, "package.json"),
     content,
-    "utf8",
   )
 }
 
@@ -69,8 +70,8 @@ export function pluralize(
     typeof count === "number"
       ? count
       : count instanceof Set || count instanceof Map
-      ? count.size
-      : count.length
+        ? count.size
+        : count.length
 
   const pluralForm = pluralRules.select(count)
   switch (pluralForm) {
